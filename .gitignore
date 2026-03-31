@@ -18,3 +18,16 @@ dist/
 
 backend/.env
 frontend/.env
+
+# database dumps / backups
+*.sql
+*.sql.gz
+*.bak
+backup/
+backups/
+www/backup/
+
+# logs / runtime
+*.log
+logs/
+*.pid

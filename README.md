@@ -14,16 +14,17 @@ edu-code-platform/
 ├── frontend/               # Vue 3 + Vite 前端
 ├── docs/                   # 项目文档
 ├── .gitignore
-├── docker-compose.yml
 └── README.md
 ```
 
 ## 快速启动
 
-### 1. 启动 MySQL（占位）
+### 1. 准备 MySQL
 
-```bash
-docker compose up -d mysql
+请使用本机或宝塔 MySQL 服务，并创建数据库：
+
+```sql
+CREATE DATABASE IF NOT EXISTS edu_code_platform DEFAULT CHARACTER SET utf8mb4;
 ```
 
 ### 2. 启动后端
