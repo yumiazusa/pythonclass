@@ -1,0 +1,24 @@
+# Frontend (Vue 3 + Vite)
+
+## 环境要求
+
+- Node.js 18+
+- npm 9+
+
+## 安装依赖
+
+```bash
+npm install
+```
+
+## 启动开发服务
+
+```bash
+npm run dev
+```
+
+## 构建生产包
+
+```bash
+npm run build
+```

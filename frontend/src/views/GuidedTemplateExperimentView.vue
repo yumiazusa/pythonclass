@@ -1,0 +1,1575 @@
+<template>
+  <section class="guided-page">
+    <article class="panel head-panel">
+      <div class="head-main">
+        <h2>{{ experimentTitle }}</h2>
+        <p>{{ experimentDescription }}</p>
+      </div>
+      <div class="head-actions">
+        <button class="btn gray" @click="goExperiments">返回实验列表</button>
+        <button class="btn light" :disabled="!hasValidExperimentId" @click="goDocs">查看实验说明</button>
+        <button v-if="canUseSubmissionFlow" class="btn light" :disabled="!hasValidExperimentId" @click="toggleHistoryPanel">历史记录</button>
+        <button v-if="hasEditorAccess" class="btn run" :disabled="isBusy || !hasValidExperimentId || !canRun" @click="handleRun">
+          {{ isRunning ? "运行中..." : "运行" }}
+        </button>
+        <button v-if="canUseSubmissionFlow" class="btn save" :disabled="isBusy || !hasValidExperimentId || !canSaveDraft" @click="handleSave">
+          {{ isSaving ? "保存中..." : "保存草稿" }}
+        </button>
+        <button
+          v-if="canUseSubmissionFlow"
+          class="btn submit"
+          :disabled="isBusy || !hasValidExperimentId || !canSubmit"
+          @click="handleSubmit"
+        >
+          {{ isSubmitting ? "提交中..." : "正式提交" }}
+        </button>
+      </div>
+    </article>
+
+    <article v-if="pageError" class="panel error">{{ pageError }}</article>
+    <article v-else-if="isAccessCheckLoading" class="panel state">正在验证实验访问权限...</article>
+    <article v-else-if="isAccessRestricted" class="panel warn">
+      <h3>{{ accessRestrictionTitle }}</h3>
+      <p>{{ accessRestrictionMessage }}</p>
+      <div class="inline-actions">
+        <button class="btn gray" @click="goExperiments">返回实验列表</button>
+        <button class="btn light" :disabled="!hasValidExperimentId" @click="goDocs">查看实验说明</button>
+      </div>
+    </article>
+    <template v-else>
+      <article class="panel params-panel">
+        <h3>参数设置（guided template）</h3>
+        <div class="params-grid">
+          <label class="field">
+            <span>目标网址（target_url）</span>
+            <input v-model.trim="templateForm.target_url" type="text" :placeholder="fieldPlaceholders.target_url" :disabled="isBusy" />
+          </label>
+          <label class="field">
+            <span>User-Agent（user_agent）</span>
+            <select v-model="templateForm.user_agent" :disabled="isBusy">
+              <option value="">{{ fieldPlaceholders.user_agent || "请选择" }}</option>
+              <option v-for="item in userAgentOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>展示前几条（preview_count）</span>
+            <input
+              v-model.number="templateForm.preview_count"
+              type="number"
+              min="1"
+              max="100"
+              :placeholder="fieldPlaceholders.preview_count"
+              :disabled="isBusy"
+            />
+          </label>
+          <label class="field">
+            <span>模板类型（template_type）</span>
+            <input :value="experiment?.template_type || '-'" type="text" disabled />
+          </label>
+        </div>
+
+        <div class="imports-wrap">
+          <article class="import-box">
+            <h4>固定库（不可删除）</h4>
+            <ul>
+              <li v-for="item in fixedImports" :key="item">{{ item }}</li>
+            </ul>
+          </article>
+          <article class="import-box">
+            <h4>可选库（可勾选）</h4>
+            <p v-if="optionalImports.length === 0" class="hint">暂无可选库</p>
+            <label v-for="item in optionalImports" :key="item" class="option-item">
+              <input v-model="selectedOptionalImports" type="checkbox" :value="item" :disabled="isBusy" />
+              <span>{{ item }}</span>
+            </label>
+          </article>
+          <article class="import-box">
+            <h4>自定义导入（多行）</h4>
+            <textarea
+              v-model="customImportText"
+              rows="6"
+              :disabled="isBusy || !allowCustomImport"
+              placeholder="示例：&#10;import json&#10;import re&#10;from sklearn.model_selection import train_test_split"
+            ></textarea>
+            <p class="hint">仅支持 import / from ... import ...，并受白名单与危险库规则校验。</p>
+          </article>
+        </div>
+
+        <div class="inline-actions">
+          <button class="btn plain" :disabled="isBusy" @click="loadTemplateSkeleton">加载骨架模板代码</button>
+          <button class="btn plain" :disabled="isBusy" @click="clearEditorCode">清空骨架模板代码</button>
+          <button class="btn plain" :disabled="isBusy" @click="restoreDefaultSkeleton">恢复默认骨架模板代码</button>
+          <button class="btn primary" :disabled="isBusy" @click="applyTemplateToCode">应用参数到代码</button>
+        </div>
+        <p v-if="templateError" class="tips error-text">{{ templateError }}</p>
+        <p v-else-if="templateMessage" class="tips success-text">{{ templateMessage }}</p>
+      </article>
+
+      <article v-if="isOverdue" class="panel warn">
+        <h3>本实验已截止，当前仅可查看内容</h3>
+        <p>不可继续运行、保存或提交，历史记录仅支持查看。</p>
+      </article>
+      <article v-if="isWorkspaceLocked" class="panel info">{{ workspaceMessage }}</article>
+      <article v-if="message && !showRunResultDrawer" class="panel info">{{ message }}</article>
+
+      <article v-if="showHistory" class="panel history-panel">
+        <div class="history-head">
+          <h3>历史记录</h3>
+          <span v-if="historyLoading" class="hint">加载中...</span>
+        </div>
+        <p class="hint">当前载入：{{ currentVersionText }}（{{ currentSubmissionStatusText }}）</p>
+        <p v-if="historyError" class="error-text">{{ historyError }}</p>
+        <p v-else-if="historyList.length === 0 && !historyLoading" class="hint">暂无历史记录</p>
+        <div v-else class="history-list">
+          <button
+            v-for="item in historyList"
+            :key="item.id"
+            :class="['history-item', { active: isHistoryItemActive(item), locked: !canRestoreHistory }]"
+            :disabled="historyDetailLoadingId === item.id || !canRestoreHistory"
+            @click="loadHistoryDetail(item)"
+          >
+            <div>版本 v{{ item.version }}</div>
+            <div>状态 {{ item.status }}</div>
+            <div>{{ formatTime(item.created_at) }}</div>
+            <div v-if="isHistoryItemActive(item)" class="mini-label">当前载入</div>
+            <div v-if="historyDetailLoadingId === item.id">恢复中...</div>
+          </button>
+        </div>
+      </article>
+
+      <article class="panel editor-panel">
+        <div class="status-line">
+          <span class="status-item">工作区：{{ workspaceStateText }}</span>
+          <span class="status-item">运行权限：{{ canRun ? "可运行" : "不可运行" }}</span>
+          <span class="status-item">当前版本：{{ currentVersionText }}</span>
+          <span class="status-item">最新版本：{{ latestSavedVersionText }}</span>
+          <span class="status-item">最近运行：{{ latestRunStatus }}</span>
+          <span class="status-item">运行耗时：{{ latestRunDuration }}</span>
+        </div>
+        <div class="status-hint">系统提示：{{ workspaceMessage }}</div>
+        <div class="editor-shell">
+          <div class="editor-mini-actions">
+            <button
+              v-if="canUseSubmissionFlow"
+              class="mini-action mini-save"
+              :disabled="isBusy || !hasValidExperimentId || !canSaveDraft"
+              title="保存草稿"
+              @click="handleSave"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M4 4h12l4 4v12H4V4zm3 0v6h8V4H7zm0 10v4h10v-4H7z"
+                  fill="currentColor"
+                />
+              </svg>
+              <span>保存</span>
+            </button>
+            <button
+              v-if="hasEditorAccess"
+              class="mini-action mini-run"
+              :disabled="isBusy || !hasValidExperimentId || !canRun"
+              title="运行代码"
+              @click="handleRun"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 5v14l11-7z" fill="currentColor" />
+              </svg>
+              <span>运行</span>
+            </button>
+          </div>
+          <div ref="editorContainer" class="editor-instance"></div>
+          <div v-if="isPageLoading" class="editor-overlay">正在加载实验数据...</div>
+        </div>
+      </article>
+    </template>
+
+    <RunResultDrawer
+      :visible="showRunResultDrawer"
+      :loading="isRunning"
+      :result="runResult"
+      :message="message"
+      :rerun-disabled="rerunDisabled"
+      :save-visible="canUseSubmissionFlow"
+      :save-disabled="saveInDrawerDisabled"
+      :save-loading="isSaving"
+      @close="showRunResultDrawer = false"
+      @rerun="handleRun"
+      @save="handleSave"
+    />
+  </section>
+</template>
+
+<script setup>
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
+import * as monaco from "monaco-editor";
+import "monaco-editor/min/vs/editor/editor.main.css";
+import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
+import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
+import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
+import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
+import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
+
+import RunResultDrawer from "../components/RunResultDrawer.vue";
+import { getStoredCurrentUser } from "../api/auth";
+import { runCode } from "../api/code";
+import { getExperimentById, validateGuidedTemplateImports } from "../api/experiment";
+import {
+  getLatestSubmission,
+  getSubmissionDetail,
+  getSubmissionHistory,
+  getWorkspaceStatus,
+  saveSubmission,
+  submitSubmission,
+} from "../api/submission";
+
+const route = useRoute();
+const router = useRouter();
+const viewerRole = ref(getStoredCurrentUser()?.role || localStorage.getItem("role") || "");
+const fallbackExperimentId = Number(import.meta.env.VITE_EXPERIMENT_ID);
+
+const experiment = ref(null);
+const currentCode = ref("");
+const lastSavedCode = ref("");
+const runResult = ref(null);
+const message = ref("");
+const pageError = ref("");
+const templateError = ref("");
+const templateMessage = ref("");
+const isRunning = ref(false);
+const isSaving = ref(false);
+const isSubmitting = ref(false);
+const isPageLoading = ref(false);
+const isAccessCheckLoading = ref(false);
+const showRunResultDrawer = ref(false);
+const showHistory = ref(false);
+const historyList = ref([]);
+const historyLoading = ref(false);
+const historyError = ref("");
+const historyDetailLoadingId = ref(null);
+const editorContainer = ref(null);
+const hasUnsavedChanges = ref(false);
+const currentLoadedVersion = ref(null);
+const latestSavedVersion = ref(null);
+const currentSubmissionStatus = ref("unknown");
+
+const accessRestriction = ref({
+  blocked: false,
+  reason: "",
+  message: "",
+});
+
+const templateForm = reactive({
+  target_url: "",
+  user_agent: "",
+  preview_count: null,
+});
+const requiredTemplateFields = ["target_url", "user_agent", "preview_count"];
+const originalTemplateCode = ref("");
+const userAgentOptions = ref([]);
+const fieldPlaceholders = reactive({
+  target_url: "",
+  user_agent: "请选择",
+  preview_count: "",
+});
+const fixedImports = ref([]);
+const optionalImports = ref([]);
+const selectedOptionalImports = ref([]);
+const allowCustomImport = ref(false);
+const customImportText = ref("");
+
+const workspaceStatus = ref({
+  experiment_id: null,
+  is_locked: false,
+  is_published: true,
+  is_open: true,
+  is_overdue: false,
+  latest_submission_id: null,
+  latest_version: null,
+  latest_status: null,
+  can_edit: true,
+  can_run: true,
+  can_save_draft: true,
+  can_submit: true,
+  message: "当前可继续编辑和保存草稿",
+});
+
+let editorInstance = null;
+let isSyncingEditorValue = false;
+
+function parseExperimentId(rawValue) {
+  const queryId = Number(rawValue);
+  if (Number.isInteger(queryId) && queryId > 0) {
+    return queryId;
+  }
+  if (Number.isInteger(fallbackExperimentId) && fallbackExperimentId > 0) {
+    return fallbackExperimentId;
+  }
+  return 0;
+}
+
+const experimentId = computed(() => parseExperimentId(route.query.experiment_id));
+const hasValidExperimentId = computed(() => experimentId.value > 0);
+const isAdminViewer = computed(() => viewerRole.value === "admin");
+const experimentTitle = computed(() => experiment.value?.title || "引导式模板实验");
+const experimentDescription = computed(
+  () => experiment.value?.description || "先配置参数与导入库，再应用到代码模板并继续运行/保存/提交。",
+);
+const isBusy = computed(() => isRunning.value || isSaving.value || isSubmitting.value || isPageLoading.value);
+
+const isWorkspaceLocked = computed(() => Boolean(workspaceStatus.value?.is_locked));
+const isOverdue = computed(() => Boolean(workspaceStatus.value?.is_overdue));
+const allowEditGeneratedCode = computed(() => Boolean(experiment.value?.allow_edit_generated_code ?? true));
+const canEdit = computed(() => Boolean(workspaceStatus.value?.can_edit ?? true) && !isOverdue.value && allowEditGeneratedCode.value);
+const canSaveDraft = computed(() => Boolean(workspaceStatus.value?.can_save_draft ?? true) && !isOverdue.value);
+const canSubmit = computed(() => Boolean(workspaceStatus.value?.can_submit ?? true) && !isOverdue.value);
+const canRun = computed(() => Boolean(workspaceStatus.value?.can_run ?? true) && !isOverdue.value);
+const canRestoreHistory = computed(() => canEdit.value && !isWorkspaceLocked.value && !isOverdue.value);
+const isAccessRestricted = computed(() => Boolean(accessRestriction.value.blocked));
+const hasEditorAccess = computed(() => !isAccessCheckLoading.value && !isAccessRestricted.value);
+const canUseSubmissionFlow = computed(() => hasEditorAccess.value && !isAdminViewer.value);
+const hasEditorContent = computed(() => Boolean((currentCode.value || "").trim()));
+
+const rerunDisabled = computed(() => !hasEditorAccess.value || !hasValidExperimentId.value || !canRun.value || isBusy.value);
+const saveInDrawerDisabled = computed(
+  () => !hasEditorAccess.value || !hasValidExperimentId.value || !canSaveDraft.value || isBusy.value,
+);
+
+const latestRunStatus = computed(() => runResult.value?.status || "-");
+const latestRunDuration = computed(() =>
+  typeof runResult.value?.execution_time_ms === "number" ? `${runResult.value.execution_time_ms} ms` : "-",
+);
+const currentVersionText = computed(() => (currentLoadedVersion.value ? `v${currentLoadedVersion.value}` : "-"));
+const latestSavedVersionText = computed(() => (latestSavedVersion.value ? `v${latestSavedVersion.value}` : "-"));
+const currentSubmissionStatusText = computed(() => {
+  if (currentSubmissionStatus.value === "draft") return "draft";
+  if (currentSubmissionStatus.value === "submitted") return "submitted";
+  if (currentSubmissionStatus.value === "history") return "历史版本";
+  return "unknown";
+});
+const accessRestrictionMessage = computed(() => accessRestriction.value.message || "当前实验暂不可访问");
+const accessRestrictionTitle = computed(() => {
+  if (accessRestriction.value.reason === "unpublished") return "当前实验未发布";
+  if (accessRestriction.value.reason === "not-open") return "当前实验尚未开放";
+  if (accessRestriction.value.reason === "mode-mismatch") return "实验模式不匹配";
+  if (accessRestriction.value.reason === "template-config") return "该实验模板尚未配置完整";
+  return "当前实验暂不可访问";
+});
+const workspaceMessage = computed(() => workspaceStatus.value?.message || "当前可继续编辑和保存草稿");
+const workspaceStateText = computed(() => {
+  if (!workspaceStatus.value?.is_published) return "未发布";
+  if (!workspaceStatus.value?.is_open) return "未开放";
+  if (workspaceStatus.value?.is_overdue) return "已截止";
+  if (isWorkspaceLocked.value) return "已锁定";
+  if (!allowEditGeneratedCode.value) return "只读";
+  return "可编辑";
+});
+
+self.MonacoEnvironment = {
+  getWorker(_, label) {
+    if (label === "json") return new jsonWorker();
+    if (label === "css" || label === "scss" || label === "less") return new cssWorker();
+    if (label === "html" || label === "handlebars" || label === "razor") return new htmlWorker();
+    if (label === "typescript" || label === "javascript") return new tsWorker();
+    return new editorWorker();
+  },
+};
+
+function createEditor() {
+  if (!editorContainer.value || editorInstance) return;
+  editorInstance = monaco.editor.create(editorContainer.value, {
+    value: currentCode.value || "",
+    language: "python",
+    theme: "vs-dark",
+    automaticLayout: true,
+    minimap: { enabled: false },
+    fontSize: 15,
+    lineNumbersMinChars: 3,
+    scrollBeyondLastLine: false,
+    padding: { top: 12, bottom: 12 },
+  });
+  editorInstance.onDidChangeModelContent(() => {
+    if (isSyncingEditorValue) return;
+    currentCode.value = editorInstance.getValue();
+    hasUnsavedChanges.value = currentCode.value !== lastSavedCode.value;
+  });
+  syncEditorReadonly();
+}
+
+async function ensureEditorInitialized() {
+  await nextTick();
+  createEditor();
+  if (!editorInstance) return;
+  setEditorValue(currentCode.value || "");
+  syncEditorReadonly();
+}
+
+function destroyEditor() {
+  if (!editorInstance) return;
+  editorInstance.dispose();
+  editorInstance = null;
+}
+
+function syncEditorReadonly() {
+  if (!editorInstance) return;
+  editorInstance.updateOptions({ readOnly: !canEdit.value });
+}
+
+function setEditorValue(nextCode, options = {}) {
+  const { markAsSaved = true } = options;
+  const finalCode = nextCode || "";
+  currentCode.value = finalCode;
+  if (editorInstance && editorInstance.getValue() !== finalCode) {
+    isSyncingEditorValue = true;
+    editorInstance.setValue(finalCode);
+    isSyncingEditorValue = false;
+  }
+  if (markAsSaved) {
+    lastSavedCode.value = finalCode;
+    hasUnsavedChanges.value = false;
+  } else {
+    hasUnsavedChanges.value = true;
+  }
+}
+
+function formatTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("zh-CN", { hour12: false });
+}
+
+function parseVersion(value) {
+  const version = Number(value);
+  return Number.isInteger(version) && version > 0 ? version : null;
+}
+
+function updateWorkspaceStatus(payload) {
+  workspaceStatus.value = {
+    ...workspaceStatus.value,
+    ...payload,
+  };
+  syncEditorReadonly();
+}
+
+function updateLoadedSubmissionMeta(record, fallbackStatus = "unknown") {
+  const status = record?.status || fallbackStatus;
+  const version = parseVersion(record?.version);
+  currentSubmissionStatus.value = status;
+  if (version) currentLoadedVersion.value = version;
+}
+
+function updateLatestSubmissionMeta(record) {
+  const version = parseVersion(record?.version);
+  if (version) latestSavedVersion.value = version;
+}
+
+function resolveAccessRestriction(experimentDetail, workspace, isAdminMode = false) {
+  if (experimentDetail?.interaction_mode !== "guided_template") {
+    return {
+      blocked: true,
+      reason: "mode-mismatch",
+      message: "当前实验不是引导式模板模式",
+    };
+  }
+  if (isAdminMode) {
+    return { blocked: false, reason: "", message: "" };
+  }
+  if (workspace?.is_published === false || experimentDetail?.is_published === false) {
+    return {
+      blocked: true,
+      reason: "unpublished",
+      message: "当前实验未发布，请稍后再进入",
+    };
+  }
+  if (workspace?.is_open === false) {
+    return {
+      blocked: true,
+      reason: "not-open",
+      message: "当前实验尚未开放，请在开放时间后进入",
+    };
+  }
+  const openAtRaw = workspace?.open_at || experimentDetail?.open_at;
+  if (openAtRaw) {
+    const openAt = new Date(openAtRaw).getTime();
+    if (!Number.isNaN(openAt) && Date.now() < openAt) {
+      return {
+        blocked: true,
+        reason: "not-open",
+        message: "当前实验尚未开放，请在开放时间后进入",
+      };
+    }
+  }
+  return { blocked: false, reason: "", message: "" };
+}
+
+function normalizeOptionalImportToStatement(moduleName) {
+  const raw = String(moduleName || "").trim();
+  if (!raw) return "";
+  if (raw.startsWith("import ") || raw.startsWith("from ")) return raw;
+  const moduleNameNormalized = raw;
+  if (moduleNameNormalized === "requests") return "import requests";
+  if (moduleNameNormalized === "bs4") return "from bs4 import BeautifulSoup";
+  if (moduleNameNormalized === "pandas") return "import pandas as pd";
+  if (moduleNameNormalized === "numpy") return "import numpy as np";
+  if (moduleNameNormalized === "matplotlib") return "import matplotlib.pyplot as plt";
+  if (moduleNameNormalized === "seaborn") return "import seaborn as sns";
+  return `import ${moduleNameNormalized}`;
+}
+
+function normalizeImportOption(item) {
+  const raw = String(item || "").trim();
+  if (!raw) return "";
+  if (raw.startsWith("from bs4 import")) return "bs4";
+  if (raw.startsWith("import requests")) return "requests";
+  if (raw.startsWith("import pandas")) return "pandas";
+  if (raw.startsWith("import numpy")) return "numpy";
+  if (raw.startsWith("import matplotlib")) return "matplotlib";
+  if (raw.startsWith("import seaborn")) return "seaborn";
+  if (raw.startsWith("import ")) {
+    return raw.replace(/^import\s+/, "").split(/\s+/)[0].split(".")[0];
+  }
+  if (raw.startsWith("from ")) {
+    return raw.replace(/^from\s+/, "").split(/\s+/)[0].split(".")[0];
+  }
+  return raw;
+}
+
+function normalizeFixedImportEntry(item) {
+  return normalizeOptionalImportToStatement(item);
+}
+
+function normalizeOptionalImportOption(item) {
+  return normalizeImportOption(item);
+}
+
+function escapePyString(value) {
+  const text = String(value ?? "");
+  return text.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function escapePySingleQuoted(value) {
+  return String(value ?? "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
+function toPythonDictLiteral(payload) {
+  if (!payload || typeof payload !== "object") {
+    return "{}";
+  }
+  const entries = Object.entries(payload);
+  if (entries.length === 0) {
+    return "{}";
+  }
+  const lines = ["{"];
+  entries.forEach(([key, value], index) => {
+    const suffix = index === entries.length - 1 ? "" : ",";
+    lines.push(`    '${escapePySingleQuoted(key)}': '${escapePySingleQuoted(value)}'${suffix}`);
+  });
+  lines.push("}");
+  return lines.join("\n");
+}
+
+function normalizeUserAgentOption(option) {
+  if (!option || typeof option !== "object") {
+    return null;
+  }
+  const value = String(option.value || "").trim();
+  if (!value) {
+    return null;
+  }
+  const label = String(option.label || value);
+  const headers = option.headers && typeof option.headers === "object" ? option.headers : null;
+  return { value, label, headers };
+}
+
+function resolveHeadersBlock() {
+  const selected = userAgentOptions.value.find((item) => item.value === templateForm.user_agent);
+  if (!selected || !selected.headers) {
+    return "{}";
+  }
+  return toPythonDictLiteral(selected.headers);
+}
+
+function resolveSelectedUserAgentValue() {
+  const selected = userAgentOptions.value.find((item) => item.value === templateForm.user_agent);
+  if (!selected || !selected.headers) {
+    return "";
+  }
+  return String(selected.headers["User-Agent"] || "");
+}
+
+function getTemplateContent() {
+  return originalTemplateCode.value || "";
+}
+
+function validateTemplateConfiguration(experimentDetail) {
+  const schema = experimentDetail?.template_schema;
+  if (!schema || typeof schema !== "object") {
+    return { valid: false, message: "该实验模板尚未配置完整：缺少 template_schema" };
+  }
+  const fields = Array.isArray(schema.fields) ? schema.fields.filter((item) => item && typeof item === "object") : [];
+  if (fields.length === 0) {
+    return { valid: false, message: "该实验模板尚未配置完整：template_schema.fields 为空" };
+  }
+  for (const fieldName of requiredTemplateFields) {
+    if (!fields.some((field) => field.name === fieldName)) {
+      return { valid: false, message: `该实验模板尚未配置完整：缺少参数字段 ${fieldName}` };
+    }
+  }
+
+  const userAgentField = fields.find((field) => field.name === "user_agent");
+  if (!userAgentField || userAgentField.type !== "select") {
+    return { valid: false, message: "该实验模板尚未配置完整：user_agent 必须配置为下拉选择字段" };
+  }
+  const options = Array.isArray(userAgentField.options) ? userAgentField.options : [];
+  const normalizedOptions = options.map(normalizeUserAgentOption).filter(Boolean);
+  if (normalizedOptions.length === 0) {
+    return { valid: false, message: "该实验模板尚未配置完整：user_agent 缺少可用选项" };
+  }
+  if (!normalizedOptions.some((option) => option.headers && Object.keys(option.headers).length > 0)) {
+    return { valid: false, message: "该实验模板尚未配置完整：user_agent 选项缺少 headers 映射" };
+  }
+
+  const codeTemplate = experimentDetail?.code_template;
+  if (typeof codeTemplate !== "string" || !codeTemplate.trim()) {
+    return { valid: false, message: "该实验模板尚未配置完整：缺少 code_template" };
+  }
+
+  const importConfig = experimentDetail?.import_config;
+  if (!importConfig || typeof importConfig !== "object") {
+    return { valid: false, message: "该实验模板尚未配置完整：缺少 import_config" };
+  }
+  if (!Array.isArray(importConfig.fixed_imports) || !Array.isArray(importConfig.optional_imports)) {
+    return { valid: false, message: "该实验模板尚未配置完整：import_config 结构不正确" };
+  }
+  if (typeof importConfig.allow_custom_import !== "boolean") {
+    return { valid: false, message: "该实验模板尚未配置完整：import_config.allow_custom_import 缺失" };
+  }
+  return { valid: true, message: "" };
+}
+
+function applyTemplateSchemaDefaults(schemaValue) {
+  const schema = schemaValue && typeof schemaValue === "object" ? schemaValue : {};
+  const fields = Array.isArray(schema?.fields) ? schema.fields : [];
+  templateForm.target_url = "";
+  templateForm.user_agent = "";
+  templateForm.preview_count = null;
+  fieldPlaceholders.target_url = "";
+  fieldPlaceholders.user_agent = "请选择";
+  fieldPlaceholders.preview_count = "";
+  userAgentOptions.value = [];
+  for (const field of fields) {
+    if (!field || typeof field !== "object") continue;
+    const fieldName = field.name;
+    if (!(fieldName in templateForm)) continue;
+    if (typeof field.placeholder === "string" && field.placeholder.trim()) {
+      fieldPlaceholders[fieldName] = field.placeholder.trim();
+    }
+    if (field.default !== undefined && field.default !== null) {
+      if (fieldName === "preview_count") {
+        const defaultNumber = Number(field.default);
+        if (Number.isFinite(defaultNumber)) {
+          templateForm.preview_count = defaultNumber;
+        }
+      } else if (typeof field.default === "string") {
+        templateForm[fieldName] = field.default;
+      }
+    }
+    if (fieldName === "user_agent" && Array.isArray(field.options)) {
+      const normalizedOptions = field.options.map(normalizeUserAgentOption).filter(Boolean);
+      userAgentOptions.value = normalizedOptions;
+    }
+  }
+}
+
+function applyImportConfig(configValue) {
+  const config = configValue && typeof configValue === "object" ? configValue : {};
+  const fixed = Array.isArray(config.fixed_imports) ? config.fixed_imports.filter((item) => typeof item === "string" && item.trim()) : [];
+  const optional = Array.isArray(config.optional_imports)
+    ? config.optional_imports.filter((item) => typeof item === "string" && item.trim())
+    : [];
+  fixedImports.value = fixed.map(normalizeFixedImportEntry).filter(Boolean);
+  optionalImports.value = optional.map(normalizeOptionalImportOption).filter(Boolean);
+  allowCustomImport.value = config.allow_custom_import === true;
+  selectedOptionalImports.value = [];
+}
+
+async function buildImportStatements() {
+  const merged = [];
+  const seen = new Set();
+  const pushUnique = (item) => {
+    const value = (item || "").trim();
+    if (!value || seen.has(value)) return;
+    seen.add(value);
+    merged.push(value);
+  };
+  fixedImports.value.forEach(pushUnique);
+  selectedOptionalImports.value.forEach((name) => pushUnique(normalizeOptionalImportToStatement(name)));
+
+  if (allowCustomImport.value && customImportText.value.trim()) {
+    const lines = customImportText.value
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    for (const line of lines) {
+      if (!/^import\s+[a-zA-Z_][\w.]*([\s]+as[\s]+[a-zA-Z_]\w*)?$/.test(line) && !/^from\s+[a-zA-Z_][\w.]*\s+import\s+[\w*,\s]+$/.test(line)) {
+        throw new Error(`自定义导入格式错误：${line}`);
+      }
+    }
+    const validateResult = await validateGuidedTemplateImports(lines.join("\n"));
+    if (!validateResult.valid) {
+      throw new Error(validateResult.errors.join("；"));
+    }
+    validateResult.normalized_imports.forEach(pushUnique);
+  }
+
+  const allValidation = await validateGuidedTemplateImports(merged.join("\n"));
+  if (!allValidation.valid) {
+    throw new Error(allValidation.errors.join("；"));
+  }
+  return allValidation.normalized_imports;
+}
+
+function normalizeLegacyHeadersTemplate(templateCode) {
+  let code = templateCode;
+  const legacyPatterns = [
+    /headers\s*=\s*\{\s*["']User-Agent["']\s*:\s*["']\{\{\s*headers_block\s*\}\}["']\s*,?\s*\}/g,
+    /headers\s*=\s*\{\s*["']User-Agent["']\s*:\s*["']\{\{\s*user_agent\s*\}\}["']\s*,?\s*\}/g,
+  ];
+  for (const pattern of legacyPatterns) {
+    code = code.replace(pattern, "headers = {{headers_block}}");
+  }
+  return code;
+}
+
+function applyTemplateValue(templateCode, importStatements) {
+  const safePreviewCount = Math.floor(Number(templateForm.preview_count));
+  const importBlock = importStatements.join("\n");
+  const headersBlock = resolveHeadersBlock();
+  const selectedUserAgent = resolveSelectedUserAgentValue();
+  let code = normalizeLegacyHeadersTemplate(templateCode);
+  code = code.replace(/{{target_url}}/g, escapePyString(templateForm.target_url || ""));
+  code = code.replace(/{{headers_block}}/g, headersBlock);
+  code = code.replace(/{{user_agent}}/g, escapePyString(selectedUserAgent));
+  code = code.replace(/{{preview_count}}/g, String(safePreviewCount));
+  if (code.includes("{{imports}}")) {
+    code = code.replace(/{{imports}}/g, importBlock);
+  } else {
+    code = `${importBlock}\n\n${code}`;
+  }
+  return code;
+}
+
+async function applyTemplateToCode() {
+  templateError.value = "";
+  templateMessage.value = "";
+  try {
+    if (!templateForm.target_url.trim()) {
+      throw new Error("目标网址不能为空");
+    }
+    if (!templateForm.user_agent.trim()) {
+      throw new Error("请选择请求头模板");
+    }
+    if (!Number.isFinite(Number(templateForm.preview_count)) || Number(templateForm.preview_count) <= 0) {
+      throw new Error("展示条数必须是大于 0 的数字");
+    }
+    if (!hasEditorContent.value) {
+      throw new Error("请先点击“加载骨架模板代码”或“恢复默认骨架模板代码”");
+    }
+    const imports = await buildImportStatements();
+    const generatedCode = applyTemplateValue(currentCode.value, imports);
+    setEditorValue(generatedCode, { markAsSaved: false });
+    templateMessage.value = "参数与导入库已应用到代码，可继续手动修改后运行/保存/提交。";
+  } catch (error) {
+    templateError.value = error.message || "应用参数失败";
+  }
+}
+
+function confirmBeforeTemplateOverride(confirmText) {
+  if (!hasEditorContent.value) {
+    return true;
+  }
+  return window.confirm(confirmText);
+}
+
+async function loadTemplateSkeleton() {
+  templateError.value = "";
+  templateMessage.value = "";
+  const nextCode = getTemplateContent();
+  if (!nextCode.trim()) {
+    templateError.value = "该实验模板尚未配置完整：未配置 code_template";
+    return;
+  }
+  const shouldContinue = confirmBeforeTemplateOverride("当前编辑器已有代码，加载骨架模板会覆盖现有内容，是否继续？");
+  if (!shouldContinue) {
+    return;
+  }
+  setEditorValue(nextCode, { markAsSaved: false });
+  templateMessage.value = "已加载骨架模板代码。";
+}
+
+async function clearEditorCode() {
+  templateError.value = "";
+  templateMessage.value = "";
+  const shouldContinue = confirmBeforeTemplateOverride("确认清空当前编辑器代码吗？此操作会覆盖现有内容。");
+  if (!shouldContinue) {
+    return;
+  }
+  setEditorValue("", { markAsSaved: false });
+  templateMessage.value = "已清空编辑器代码。";
+}
+
+async function restoreDefaultSkeleton() {
+  templateError.value = "";
+  templateMessage.value = "";
+  const nextCode = getTemplateContent();
+  if (!nextCode.trim()) {
+    templateError.value = "该实验模板尚未配置完整：未配置 code_template";
+    return;
+  }
+  const shouldContinue = confirmBeforeTemplateOverride("恢复默认骨架模板会覆盖当前编辑器内容，是否继续？");
+  if (!shouldContinue) {
+    return;
+  }
+  setEditorValue(nextCode, { markAsSaved: false });
+  templateMessage.value = "已恢复默认骨架模板代码。";
+}
+
+async function refreshLatestAndHistory(options = {}) {
+  const { updateLoadedFromLatest = false } = options;
+  try {
+    const workspace = await getWorkspaceStatus(experimentId.value);
+    updateWorkspaceStatus(workspace);
+  } catch (error) {
+    message.value = `工作区状态同步失败：${error.message}`;
+  }
+  try {
+    const latest = await getLatestSubmission(experimentId.value);
+    updateLatestSubmissionMeta(latest);
+    if (updateLoadedFromLatest) {
+      updateLoadedSubmissionMeta(latest, latest?.status ? "unknown" : "draft");
+    }
+  } catch (error) {
+    if (error.message.includes("暂无提交记录")) {
+      latestSavedVersion.value = null;
+      if (updateLoadedFromLatest) {
+        currentLoadedVersion.value = null;
+        currentSubmissionStatus.value = "unknown";
+      }
+    }
+  }
+  try {
+    historyList.value = await getSubmissionHistory(experimentId.value);
+    historyError.value = "";
+  } catch (error) {
+    if (showHistory.value) {
+      historyError.value = `历史记录加载失败：${error.message}`;
+    }
+  }
+}
+
+async function loadExperimentAndCode() {
+  runResult.value = null;
+  historyList.value = [];
+  historyError.value = "";
+  showHistory.value = false;
+  pageError.value = "";
+  message.value = "";
+  templateError.value = "";
+  templateMessage.value = "";
+  templateForm.target_url = "";
+  templateForm.user_agent = "";
+  templateForm.preview_count = null;
+  originalTemplateCode.value = "";
+  userAgentOptions.value = [];
+  fieldPlaceholders.target_url = "";
+  fieldPlaceholders.user_agent = "请选择";
+  fieldPlaceholders.preview_count = "";
+  fixedImports.value = [];
+  optionalImports.value = [];
+  allowCustomImport.value = false;
+  selectedOptionalImports.value = [];
+  customImportText.value = "";
+  currentLoadedVersion.value = null;
+  latestSavedVersion.value = null;
+  currentSubmissionStatus.value = "unknown";
+  accessRestriction.value = { blocked: false, reason: "", message: "" };
+  updateWorkspaceStatus({
+    experiment_id: experimentId.value,
+    is_locked: false,
+    is_published: true,
+    is_open: true,
+    is_overdue: false,
+    latest_submission_id: null,
+    latest_version: null,
+    latest_status: null,
+    can_edit: true,
+    can_run: true,
+    can_save_draft: true,
+    can_submit: true,
+    message: "当前可继续编辑和保存草稿",
+  });
+
+  if (!hasValidExperimentId.value) {
+    pageError.value = "请先在实验列表中选择实验后再进入引导式模板实验";
+    setEditorValue("");
+    return;
+  }
+
+  isAccessCheckLoading.value = true;
+  isPageLoading.value = true;
+  try {
+    const detail = await getExperimentById(experimentId.value);
+    experiment.value = detail;
+    if (detail.interaction_mode !== "guided_template") {
+      router.replace(`/editor?experiment_id=${experimentId.value}`);
+      return;
+    }
+
+    const templateConfigCheck = validateTemplateConfiguration(detail);
+    if (!templateConfigCheck.valid) {
+      accessRestriction.value = {
+        blocked: true,
+        reason: "template-config",
+        message: templateConfigCheck.message || "该实验模板尚未配置完整",
+      };
+      setEditorValue("", { markAsSaved: true });
+      message.value = accessRestriction.value.message;
+      return;
+    }
+
+    originalTemplateCode.value = detail.code_template || "";
+    applyTemplateSchemaDefaults(detail.template_schema);
+    applyImportConfig(detail.import_config);
+
+    const workspace = await getWorkspaceStatus(experimentId.value);
+    updateWorkspaceStatus(workspace);
+    accessRestriction.value = resolveAccessRestriction(detail, workspace, isAdminViewer.value);
+
+    if (accessRestriction.value.blocked) {
+      setEditorValue("", { markAsSaved: true });
+      message.value = accessRestriction.value.message;
+      return;
+    }
+
+    let nextCode = "";
+    try {
+      const latest = await getLatestSubmission(experimentId.value);
+      if (latest?.code) {
+        nextCode = latest.code;
+        updateLatestSubmissionMeta(latest);
+        updateLoadedSubmissionMeta(latest, latest?.status ? "unknown" : "draft");
+        message.value = "已加载最新保存代码";
+      }
+    } catch (error) {
+      if (!error.message.includes("暂无提交记录")) {
+        message.value = `最新代码加载失败：${error.message}，编辑器保持为空，请手动加载骨架模板`;
+      }
+    }
+
+    if (!nextCode) {
+      nextCode = "";
+      message.value = "未检测到历史代码，请先点击“加载骨架模板代码”或“恢复默认骨架模板代码”。";
+    }
+    setEditorValue(nextCode, { markAsSaved: true });
+  } catch (error) {
+    experiment.value = null;
+    setEditorValue("");
+    pageError.value = `实验加载失败：${error.message}`;
+  } finally {
+    isAccessCheckLoading.value = false;
+    isPageLoading.value = false;
+  }
+}
+
+function buildSubmissionPayload(codeValue = currentCode.value) {
+  const stdout = runResult.value?.stdout || "";
+  const stderr = runResult.value?.stderr || "";
+  const runOutput = stdout || stderr || runResult.value?.status || "not_run";
+  const isPassed = typeof runResult.value?.success === "boolean" ? runResult.value.success : null;
+  return {
+    experiment_id: experimentId.value,
+    code: codeValue,
+    run_output: runOutput,
+    is_passed: isPassed,
+  };
+}
+
+async function handleRun() {
+  showRunResultDrawer.value = true;
+  if (!hasEditorAccess.value) {
+    message.value = accessRestrictionMessage.value;
+    return;
+  }
+  if (!hasValidExperimentId.value) {
+    message.value = "缺少有效实验编号，无法运行";
+    return;
+  }
+  if (!canRun.value) {
+    message.value = isOverdue.value ? "本实验已截止，当前不可运行代码" : workspaceMessage.value;
+    return;
+  }
+  if (!currentCode.value.trim()) {
+    message.value = "代码不能为空";
+    return;
+  }
+  isRunning.value = true;
+  message.value = "";
+  try {
+    runResult.value = await runCode(currentCode.value, experimentId.value);
+    message.value = "运行完成";
+  } catch (error) {
+    message.value = `运行失败：${error.message}`;
+  } finally {
+    isRunning.value = false;
+  }
+}
+
+async function handleSave() {
+  if (isAdminViewer.value) {
+    message.value = "管理员测试模式不支持保存草稿";
+    return;
+  }
+  if (!hasEditorAccess.value) {
+    message.value = accessRestrictionMessage.value;
+    return;
+  }
+  if (!hasValidExperimentId.value) {
+    message.value = "缺少有效实验编号，无法保存";
+    return;
+  }
+  if (!currentCode.value.trim()) {
+    message.value = "代码不能为空";
+    return;
+  }
+  if (!canSaveDraft.value) {
+    message.value = isOverdue.value ? "本实验已截止，当前不可保存草稿" : workspaceMessage.value;
+    return;
+  }
+  isSaving.value = true;
+  message.value = "";
+  try {
+    const saved = await saveSubmission(buildSubmissionPayload());
+    lastSavedCode.value = currentCode.value;
+    hasUnsavedChanges.value = false;
+    updateLoadedSubmissionMeta(saved, "draft");
+    updateLatestSubmissionMeta(saved);
+    await refreshLatestAndHistory({ updateLoadedFromLatest: true });
+    message.value = `草稿保存成功，当前版本 ${currentVersionText.value}`;
+  } catch (error) {
+    message.value = `保存失败：${error.message}`;
+  } finally {
+    isSaving.value = false;
+  }
+}
+
+async function handleSubmit() {
+  if (isAdminViewer.value) {
+    message.value = "管理员测试模式不支持正式提交";
+    return;
+  }
+  if (!hasEditorAccess.value) {
+    message.value = accessRestrictionMessage.value;
+    return;
+  }
+  if (!hasValidExperimentId.value) {
+    message.value = "缺少有效实验编号，无法提交";
+    return;
+  }
+  if (!currentCode.value.trim()) {
+    message.value = "代码不能为空";
+    return;
+  }
+  if (!canSubmit.value) {
+    message.value = isOverdue.value ? "本实验已截止，当前不可正式提交" : workspaceMessage.value;
+    return;
+  }
+  isSubmitting.value = true;
+  message.value = "";
+  try {
+    const submission = await submitSubmission(buildSubmissionPayload());
+    lastSavedCode.value = currentCode.value;
+    hasUnsavedChanges.value = false;
+    updateLoadedSubmissionMeta(submission, "submitted");
+    updateLatestSubmissionMeta(submission);
+    await refreshLatestAndHistory({ updateLoadedFromLatest: true });
+    message.value = `已正式提交，当前版本 ${currentVersionText.value}`;
+  } catch (error) {
+    message.value = `提交失败：${error.message}`;
+  } finally {
+    isSubmitting.value = false;
+  }
+}
+
+async function loadHistory() {
+  historyLoading.value = true;
+  historyError.value = "";
+  historyList.value = [];
+  try {
+    historyList.value = await getSubmissionHistory(experimentId.value);
+  } catch (error) {
+    historyError.value = `历史记录加载失败：${error.message}`;
+  } finally {
+    historyLoading.value = false;
+  }
+}
+
+async function toggleHistoryPanel() {
+  if (!hasEditorAccess.value) {
+    message.value = accessRestrictionMessage.value;
+    return;
+  }
+  if (!hasValidExperimentId.value) {
+    message.value = "缺少有效实验编号，无法查看历史";
+    return;
+  }
+  showHistory.value = !showHistory.value;
+  if (showHistory.value) {
+    await loadHistory();
+  }
+}
+
+function isHistoryItemActive(item) {
+  return parseVersion(item?.version) === currentLoadedVersion.value;
+}
+
+async function loadHistoryDetail(item) {
+  if (!canRestoreHistory.value) {
+    message.value = isOverdue.value ? "本实验已截止，当前不可恢复历史版本" : "当前不可恢复历史版本";
+    return;
+  }
+  if (hasUnsavedChanges.value) {
+    const confirmed = window.confirm("当前有未保存修改，恢复历史版本会覆盖当前代码，是否继续？");
+    if (!confirmed) return;
+  }
+  historyDetailLoadingId.value = item.id;
+  try {
+    const detail = await getSubmissionDetail(item.id);
+    if (typeof detail?.code === "string") {
+      setEditorValue(detail.code, { markAsSaved: false });
+      currentLoadedVersion.value = parseVersion(item?.version);
+      currentSubmissionStatus.value = "history";
+      message.value = `已加载历史版本 v${item.version}，请保存或提交`;
+    } else {
+      message.value = "该版本无可用代码";
+    }
+  } catch (error) {
+    message.value = `版本恢复失败：${error.message}`;
+  } finally {
+    historyDetailLoadingId.value = null;
+  }
+}
+
+function goDocs() {
+  if (!hasValidExperimentId.value) return;
+  router.push(`/docs?experiment_id=${experimentId.value}`);
+}
+
+function goExperiments() {
+  if (isAdminViewer.value) {
+    router.push("/admin/experiments");
+    return;
+  }
+  router.push("/experiments");
+}
+
+watch(
+  () => experimentId.value,
+  () => {
+    loadExperimentAndCode();
+  },
+  { immediate: true },
+);
+
+watch(
+  () => hasEditorAccess.value,
+  async (allowed) => {
+    if (allowed) {
+      await ensureEditorInitialized();
+      return;
+    }
+    showHistory.value = false;
+    destroyEditor();
+  },
+  { immediate: true },
+);
+
+watch(
+  () => canEdit.value,
+  () => {
+    syncEditorReadonly();
+  },
+  { immediate: true },
+);
+
+const handleBeforeUnload = (event) => {
+  if (!hasEditorAccess.value) return;
+  if (!hasUnsavedChanges.value) return;
+  event.preventDefault();
+  event.returnValue = "";
+};
+
+onBeforeRouteLeave(() => {
+  if (!hasEditorAccess.value) return true;
+  if (!hasUnsavedChanges.value) return true;
+  return window.confirm("当前有未保存修改，离开页面将丢失最新改动，是否继续离开？");
+});
+
+onMounted(() => {
+  viewerRole.value = getStoredCurrentUser()?.role || localStorage.getItem("role") || "";
+  ensureEditorInitialized();
+  window.addEventListener("beforeunload", handleBeforeUnload);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("beforeunload", handleBeforeUnload);
+  destroyEditor();
+});
+</script>
+
+<style scoped>
+.guided-page {
+  display: grid;
+  gap: 14px;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #e5e8f0;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.head-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.head-main h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.head-main p {
+  margin: 8px 0 0;
+  color: #64748b;
+}
+
+.head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-top: 1px solid #eef2ff;
+  padding-top: 12px;
+}
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+}
+
+.btn.primary {
+  background: #2563eb;
+}
+
+.btn.run {
+  background: #2563eb;
+}
+
+.btn.save {
+  background: #059669;
+}
+
+.btn.submit {
+  background: #7c3aed;
+}
+
+.btn.light {
+  background: #e0e7ff;
+  color: #1d4ed8;
+}
+
+.btn.gray {
+  background: #4b5563;
+}
+
+.btn.plain {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.state,
+.info {
+  color: #1e3a8a;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.warn {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+
+.error {
+  color: #b91c1c;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.params-panel h3 {
+  margin: 0;
+}
+
+.params-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field span {
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: inherit;
+}
+
+.imports-wrap {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.import-box {
+  border: 1px solid #e5e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 10px;
+}
+
+.import-box h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.import-box ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.hint {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.inline-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tips {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
+.success-text {
+  color: #166534;
+}
+
+.error-text {
+  color: #b91c1c;
+}
+
+.history-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.history-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.history-head h3 {
+  margin: 0;
+}
+
+.history-list {
+  display: grid;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.history-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+  text-align: left;
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.history-item.active {
+  border-color: #6366f1;
+  background: #eef2ff;
+}
+
+.history-item.locked {
+  opacity: 0.8;
+}
+
+.mini-label {
+  color: #4338ca;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.editor-panel {
+  padding: 0 0 14px;
+  overflow: hidden;
+}
+
+.status-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 14px 6px;
+}
+
+.status-item {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #eef2ff;
+  color: #312e81;
+}
+
+.status-hint {
+  margin: 0 14px 10px;
+  color: #1e3a8a;
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.editor-shell {
+  position: relative;
+}
+
+.editor-mini-actions {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 6;
+  display: flex;
+  gap: 8px;
+}
+
+.mini-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #fff;
+  color: #1f2937;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+.mini-action svg {
+  width: 14px;
+  height: 14px;
+}
+
+.mini-run {
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.mini-save {
+  border-color: #86efac;
+  color: #047857;
+}
+
+.mini-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.editor-instance {
+  height: 520px;
+}
+
+.editor-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.7);
+  color: #1f2937;
+  font-weight: 600;
+}
+
+@media (max-width: 980px) {
+  .params-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .imports-wrap {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
