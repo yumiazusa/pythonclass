@@ -145,6 +145,7 @@ import {
   saveSubmission,
   submitSubmission,
 } from "../api/submission";
+import { formatApiDateTime, parseApiDateTime } from "../utils/datetime";
 import RunResultDrawer from "../components/RunResultDrawer.vue";
 
 const defaultCode = 'print("hello world")';
@@ -545,14 +546,7 @@ function setEditorValue(nextCode, options = {}) {
 }
 
 function formatTime(value) {
-  if (!value) {
-    return "-";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleString("zh-CN", { hour12: false });
+  return formatApiDateTime(value);
 }
 
 function resolveAccessRestriction(experimentDetail, workspace, isAdminMode = false) {
@@ -596,7 +590,8 @@ function resolveAccessRestriction(experimentDetail, workspace, isAdminMode = fal
   }
   const openAtRaw = workspace?.open_at || experimentDetail?.open_at;
   if (openAtRaw) {
-    const openAtTime = new Date(openAtRaw).getTime();
+    const openAtDate = parseApiDateTime(openAtRaw);
+    const openAtTime = openAtDate ? openAtDate.getTime() : Number.NaN;
     if (!Number.isNaN(openAtTime) && Date.now() < openAtTime) {
       return {
         blocked: true,

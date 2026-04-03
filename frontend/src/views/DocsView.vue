@@ -77,6 +77,7 @@ import "highlight.js/styles/github.css";
 import { getStoredCurrentUser } from "../api/auth";
 import { getDocBySlug, getDocCategories, getDocs } from "../api/docs";
 import { getExperimentById } from "../api/experiment";
+import { formatApiDateTime, parseApiDateTime } from "../utils/datetime";
 
 hljs.registerLanguage("python", pythonLang);
 hljs.registerLanguage("javascript", javascriptLang);
@@ -212,7 +213,8 @@ const canEnterEditor = computed(() => {
     return false;
   }
   if (experiment.value.open_at) {
-    const openAtTime = new Date(experiment.value.open_at).getTime();
+    const openAtDate = parseApiDateTime(experiment.value.open_at);
+    const openAtTime = openAtDate ? openAtDate.getTime() : Number.NaN;
     if (!Number.isNaN(openAtTime) && Date.now() < openAtTime) {
       return false;
     }
@@ -231,7 +233,8 @@ const editorAccessHint = computed(() => {
     return "当前实验未发布，暂不可返回编辑页";
   }
   if (experiment.value.open_at) {
-    const openAtTime = new Date(experiment.value.open_at).getTime();
+    const openAtDate = parseApiDateTime(experiment.value.open_at);
+    const openAtTime = openAtDate ? openAtDate.getTime() : Number.NaN;
     if (!Number.isNaN(openAtTime) && Date.now() < openAtTime) {
       return "当前实验尚未开放，请在开放时间后进入编辑页";
     }
@@ -250,14 +253,7 @@ const enterTargetPath = computed(() => {
 });
 
 function formatTime(value) {
-  if (!value) {
-    return "-";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleString("zh-CN", { hour12: false });
+  return formatApiDateTime(value);
 }
 
 function selectItem(item) {

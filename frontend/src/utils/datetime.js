@@ -16,7 +16,8 @@ export function parseApiDateTime(value) {
   if (!text) {
     return null;
   }
-  const normalized = hasExplicitTimezone(text) ? text : `${text}Z`;
+  const normalizedBase = text.includes(" ") && !text.includes("T") ? text.replace(" ", "T") : text;
+  const normalized = hasExplicitTimezone(normalizedBase) ? normalizedBase : `${normalizedBase}Z`;
   const parsed = new Date(normalized);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }

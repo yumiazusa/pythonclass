@@ -101,6 +101,7 @@
 import { computed, onMounted, ref } from "vue";
 
 import { getStudentDashboard } from "../api/student";
+import { formatApiDateTime } from "../utils/datetime";
 
 const dashboard = ref(null);
 const isLoading = ref(false);
@@ -115,14 +116,7 @@ const unfinishedCount = computed(() => {
 });
 
 function formatTime(value) {
-  if (!value) {
-    return "-";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleString("zh-CN", { hour12: false });
+  return formatApiDateTime(value);
 }
 
 function roleLabel(role) {

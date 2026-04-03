@@ -222,6 +222,7 @@ import {
   saveSubmission,
   submitSubmission,
 } from "../api/submission";
+import { formatApiDateTime, parseApiDateTime } from "../utils/datetime";
 
 const route = useRoute();
 const router = useRouter();
@@ -433,10 +434,7 @@ function setEditorValue(nextCode, options = {}) {
 }
 
 function formatTime(value) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("zh-CN", { hour12: false });
+  return formatApiDateTime(value);
 }
 
 function parseVersion(value) {
@@ -491,7 +489,8 @@ function resolveAccessRestriction(experimentDetail, workspace, isAdminMode = fal
   }
   const openAtRaw = workspace?.open_at || experimentDetail?.open_at;
   if (openAtRaw) {
-    const openAt = new Date(openAtRaw).getTime();
+    const openAtDate = parseApiDateTime(openAtRaw);
+    const openAt = openAtDate ? openAtDate.getTime() : Number.NaN;
     if (!Number.isNaN(openAt) && Date.now() < openAt) {
       return {
         blocked: true,
