@@ -1,4 +1,5 @@
 from copy import deepcopy
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy.exc import IntegrityError
@@ -49,6 +50,14 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 ALLOWED_EXPERIMENT_INTERACTION_MODE = {"all", "native_editor", "guided_template"}
 ALLOWED_EXPERIMENT_SORT_BY = {"updated_at", "created_at", "sort_order", "title", "slug", "open_at", "due_at"}
 ALLOWED_EXPERIMENT_SORT_ORDER = {"asc", "desc"}
+
+
+def _normalize_to_utc_naive(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(timezone.utc).replace(tzinfo=None)
 
 
 def _to_admin_experiment_item(item) -> AdminExperimentItem:
@@ -258,7 +267,9 @@ def create_admin_experiment(
     clean_slug = payload.slug.strip()
     if not clean_slug:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="slug 不能为空")
-    if payload.open_at and payload.due_at and payload.due_at <= payload.open_at:
+    normalized_open_at = _normalize_to_utc_naive(payload.open_at)
+    normalized_due_at = _normalize_to_utc_naive(payload.due_at)
+    if normalized_open_at and normalized_due_at and normalized_due_at <= normalized_open_at:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="截止时间必须晚于开放时间")
     existed = crud_experiment.get_by_slug(db, slug=clean_slug)
     if existed:
@@ -326,8 +337,8 @@ def update_admin_experiment(
         update_payload["template_type"] = update_payload["template_type"].strip() or None
     if "code_template" in update_payload and isinstance(update_payload.get("code_template"), str):
         update_payload["code_template"] = update_payload["code_template"] or None
-    open_at = update_payload.get("open_at", experiment.open_at)
-    due_at = update_payload.get("due_at", experiment.due_at)
+    open_at = _normalize_to_utc_naive(update_payload.get("open_at", experiment.open_at))
+    due_at = _normalize_to_utc_naive(update_payload.get("due_at", experiment.due_at))
     if open_at and due_at and due_at <= open_at:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="截止时间必须晚于开放时间")
     updated = crud_experiment.update_admin_experiment(db, experiment=experiment, payload=update_payload)

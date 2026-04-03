@@ -419,6 +419,7 @@ import {
   returnTeacherStudentExperiment,
   updateTeacherExperimentSettings,
 } from "../api/teacher";
+import { formatApiDateTime, toDateTimeLocalInput, toUtcIsoStringFromLocalInput } from "../utils/datetime";
 
 const route = useRoute();
 
@@ -531,37 +532,15 @@ const canBatchReview = computed(
 const experimentPublishLabel = computed(() => (experimentSettings.value?.is_published ? "已发布" : "未发布"));
 
 function formatTime(value) {
-  if (!value) {
-    return "-";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleString();
+  return formatApiDateTime(value);
 }
 
 function toDateTimeLocalValue(value) {
-  if (!value) {
-    return "";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-  const pad = (num) => `${num}`.padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return toDateTimeLocalInput(value);
 }
 
 function toIsoDateTime(value) {
-  if (!value) {
-    return null;
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-  return date.toISOString();
+  return toUtcIsoStringFromLocalInput(value);
 }
 
 function formatReviewStatus(value) {

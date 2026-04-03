@@ -1,4 +1,5 @@
 from urllib.parse import quote
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
@@ -44,6 +45,14 @@ router = APIRouter(prefix="/teacher", tags=["teacher"])
 ALLOWED_STUDENT_SORT_BY = {"created_at", "username", "full_name", "student_no", "class_name", "is_enabled"}
 ALLOWED_EXPERIMENT_STUDENT_SORT_BY = {"latest_updated_at", "username", "latest_version"}
 ALLOWED_SORT_ORDER = {"asc", "desc"}
+
+
+def _normalize_to_utc_naive(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(timezone.utc).replace(tzinfo=None)
 
 
 def _ensure_experiment_exists(db: DBSession, experiment_id: int) -> None:
@@ -131,7 +140,9 @@ def update_teacher_experiment_settings(
     experiment = crud_experiment.get(db, experiment_id=experiment_id)
     if not experiment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="实验不存在")
-    if settings_in.open_at and settings_in.due_at and settings_in.due_at <= settings_in.open_at:
+    normalized_open_at = _normalize_to_utc_naive(settings_in.open_at)
+    normalized_due_at = _normalize_to_utc_naive(settings_in.due_at)
+    if normalized_open_at and normalized_due_at and normalized_due_at <= normalized_open_at:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="截止时间必须晚于开放时间")
     updated = crud_experiment.update_settings(db, experiment=experiment, settings_in=settings_in)
     return ExperimentRead.model_validate(updated)
