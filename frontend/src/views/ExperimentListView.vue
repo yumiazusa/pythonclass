@@ -49,6 +49,7 @@
 import { onMounted, ref } from "vue";
 
 import { getExperiments } from "../api/experiment";
+import { formatApiDateTime, parseApiDateTime } from "../utils/datetime";
 
 const experiments = ref([]);
 const isLoading = ref(true);
@@ -57,20 +58,15 @@ const visibleExperiments = ref([]);
 const warningMessage = ref("");
 
 function formatTime(value) {
-  if (!value) {
-    return "-";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleString("zh-CN", { hour12: false });
+  return formatApiDateTime(value);
 }
 
 function getExperimentScheduleState(item) {
   const now = Date.now();
-  const openAt = item?.open_at ? new Date(item.open_at).getTime() : null;
-  const dueAt = item?.due_at ? new Date(item.due_at).getTime() : null;
+  const openAtDate = parseApiDateTime(item?.open_at);
+  const dueAtDate = parseApiDateTime(item?.due_at);
+  const openAt = openAtDate ? openAtDate.getTime() : null;
+  const dueAt = dueAtDate ? dueAtDate.getTime() : null;
   if (!item?.is_published) {
     return { key: "unpublished", label: "未发布" };
   }
