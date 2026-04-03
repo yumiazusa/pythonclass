@@ -55,6 +55,7 @@ import { onMounted, ref } from "vue";
 
 import { getCurrentUserProfile } from "../api/auth";
 import { downloadTeacherStudentImportTemplate, getTeacherExperimentOverview } from "../api/teacher";
+import { formatApiDateTime } from "../utils/datetime";
 
 const overviewList = ref([]);
 const isLoading = ref(false);
@@ -65,14 +66,7 @@ const isTeacher = ref(false);
 const isDownloadingTemplate = ref(false);
 
 function formatTime(value) {
-  if (!value) {
-    return "-";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleString();
+  return formatApiDateTime(value);
 }
 
 async function verifyTeacherRole() {

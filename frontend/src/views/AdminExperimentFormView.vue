@@ -145,6 +145,7 @@ import {
   getAdminExperimentById,
   updateAdminExperiment,
 } from "../api/admin";
+import { toDateTimeLocalInput, toUtcIsoStringFromLocalInput } from "../utils/datetime";
 
 const route = useRoute();
 const router = useRouter();
@@ -185,34 +186,6 @@ const form = reactive({
   due_at: "",
 });
 
-function toDateTimeLocal(value) {
-  if (!value) {
-    return "";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-  const pad = (v) => String(v).padStart(2, "0");
-  const y = date.getFullYear();
-  const m = pad(date.getMonth() + 1);
-  const d = pad(date.getDate());
-  const h = pad(date.getHours());
-  const mm = pad(date.getMinutes());
-  return `${y}-${m}-${d}T${h}:${mm}`;
-}
-
-function normalizeDateTimeLocal(value) {
-  if (!value) {
-    return null;
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-  return date.toISOString();
-}
-
 function parseJsonText(value, fieldLabel) {
   const text = (value || "").trim();
   if (!text) {
@@ -252,8 +225,8 @@ function buildPayload() {
     sort_order: Number.isFinite(Number(form.sort_order)) ? Number(form.sort_order) : 0,
     is_active: Boolean(form.is_active),
     is_published: Boolean(form.is_published),
-    open_at: normalizeDateTimeLocal(form.open_at),
-    due_at: normalizeDateTimeLocal(form.due_at),
+    open_at: toUtcIsoStringFromLocalInput(form.open_at),
+    due_at: toUtcIsoStringFromLocalInput(form.due_at),
   };
   if (form.interaction_mode === "guided_template") {
     payload.template_type = form.template_type.trim() || null;
@@ -279,8 +252,8 @@ function applyDetail(detail) {
   form.sort_order = Number.isFinite(Number(detail.sort_order)) ? Number(detail.sort_order) : 0;
   form.is_active = Boolean(detail.is_active);
   form.is_published = Boolean(detail.is_published);
-  form.open_at = toDateTimeLocal(detail.open_at);
-  form.due_at = toDateTimeLocal(detail.due_at);
+  form.open_at = toDateTimeLocalInput(detail.open_at);
+  form.due_at = toDateTimeLocalInput(detail.due_at);
 }
 
 async function loadDetail() {

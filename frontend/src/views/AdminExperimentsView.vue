@@ -178,6 +178,7 @@ import {
   enableAdminExperiment,
   getAdminExperiments,
 } from "../api/admin";
+import { formatApiDateTime } from "../utils/datetime";
 
 const experiments = ref([]);
 const isLoading = ref(false);
@@ -208,14 +209,7 @@ function modeText(mode) {
 }
 
 function formatTime(value) {
-  if (!value) {
-    return "-";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleString("zh-CN", { hour12: false });
+  return formatApiDateTime(value);
 }
 
 function buildQueryParams() {
