@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     code_run_timeout_seconds: int = 15
     code_run_max_output_chars: int = 20000
     code_run_temp_dir: str = "/tmp/edu_code_runner"
+    cors_allow_origins: str = "*"
+    cors_allow_methods: str = "*"
+    cors_allow_headers: str = "*"
+    cors_allow_credentials: bool = False
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -34,6 +38,26 @@ class Settings(BaseSettings):
             f"@{self.mysql_host}:{self.mysql_port}/{self.mysql_db}"
             "?charset=utf8mb4"
         )
+
+    @staticmethod
+    def _parse_csv_config(value: str) -> list[str]:
+        if not value:
+            return []
+        if value.strip() == "*":
+            return ["*"]
+        return [item.strip() for item in value.split(",") if item.strip()]
+
+    @property
+    def cors_allow_origins_list(self) -> list[str]:
+        return self._parse_csv_config(self.cors_allow_origins) or ["*"]
+
+    @property
+    def cors_allow_methods_list(self) -> list[str]:
+        return self._parse_csv_config(self.cors_allow_methods) or ["*"]
+
+    @property
+    def cors_allow_headers_list(self) -> list[str]:
+        return self._parse_csv_config(self.cors_allow_headers) or ["*"]
 
 
 @lru_cache

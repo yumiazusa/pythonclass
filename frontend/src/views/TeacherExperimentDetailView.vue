@@ -55,31 +55,60 @@
         <p v-if="classSummaryLoading" class="hint">正在加载班级统计...</p>
         <p v-else-if="classSummaryError" class="error-text">{{ classSummaryError }}</p>
         <p v-else-if="classSummaryList.length === 0" class="hint">暂无班级统计数据</p>
-        <div v-else class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>班级</th>
-                <th>总人数</th>
-                <th>已提交</th>
-                <th>通过</th>
-                <th>未通过</th>
-                <th>待批阅</th>
-                <th>未提交</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in classSummaryList" :key="item.class_name">
-                <td>{{ item.class_name }}</td>
-                <td>{{ item.total_students }}</td>
-                <td>{{ item.submitted_count }}</td>
-                <td>{{ item.passed_count }}</td>
-                <td>{{ item.failed_count }}</td>
-                <td>{{ item.pending_review_count }}</td>
-                <td>{{ item.not_submitted_count }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div v-else>
+          <div class="table-wrap desktop-only">
+            <table>
+              <thead>
+                <tr>
+                  <th>班级</th>
+                  <th>总人数</th>
+                  <th>已提交</th>
+                  <th>通过</th>
+                  <th>未通过</th>
+                  <th>待批阅</th>
+                  <th>未提交</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in classSummaryList" :key="item.class_name">
+                  <td>{{ item.class_name }}</td>
+                  <td>{{ item.total_students }}</td>
+                  <td>{{ item.submitted_count }}</td>
+                  <td>{{ item.passed_count }}</td>
+                  <td>{{ item.failed_count }}</td>
+                  <td>{{ item.pending_review_count }}</td>
+                  <td>{{ item.not_submitted_count }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="mobile-only summary-mobile-list">
+            <article v-for="item in classSummaryList" :key="`summary-${item.class_name}`" class="summary-mobile-card">
+              <div class="summary-mobile-head">
+                <h4>{{ item.class_name }}</h4>
+                <span class="summary-mobile-rate">提交率 {{ formatSubmitRate(item.submitted_count, item.total_students) }}</span>
+              </div>
+              <div class="summary-mobile-metrics">
+                <div>
+                  <span>总人数</span>
+                  <strong>{{ item.total_students }}</strong>
+                </div>
+                <div>
+                  <span>已提交</span>
+                  <strong>{{ item.submitted_count }}</strong>
+                </div>
+                <div>
+                  <span>待批阅</span>
+                  <strong>{{ item.pending_review_count }}</strong>
+                </div>
+                <div>
+                  <span>通过</span>
+                  <strong>{{ item.passed_count }}</strong>
+                </div>
+              </div>
+              <p class="summary-mobile-foot">未提交 {{ item.not_submitted_count }} ｜ 未通过 {{ item.failed_count }}</p>
+            </article>
+          </div>
         </div>
       </article>
 
@@ -151,9 +180,12 @@
         <div class="batch-ops">
           <span class="batch-meta">已选 {{ selectedCount }} 人，可批量批阅 {{ selectedSubmissionIds.length }} 条提交</span>
           <div class="batch-actions">
+            <span class="batch-select-label">批量设为</span>
             <select
               v-model="batchReviewForm.review_status"
               class="batch-select"
+              aria-label="批量批阅目标状态"
+              title="批量批阅目标状态"
               :disabled="studentsLoading || batchReturning || batchReviewing"
             >
               <option value="pending">待批阅</option>
@@ -165,7 +197,7 @@
               class="batch-comment"
               type="text"
               maxlength="500"
-              placeholder="批量批阅评语（可选）"
+              placeholder="批量评语（可选）"
               :disabled="studentsLoading || batchReturning || batchReviewing"
             />
             <button
@@ -185,7 +217,7 @@
               清空选择
             </button>
             <button type="button" class="btn review" :disabled="!canBatchReview" @click="handleBatchReview">
-              {{ batchReviewing ? "批量批阅中..." : "批量批阅" }}
+              {{ batchReviewing ? "执行中..." : "执行批量批阅" }}
             </button>
             <button type="button" class="btn return" :disabled="!canBatchReturn" @click="handleBatchReturn">
               {{ batchReturning ? "批量退回中..." : "批量退回" }}
@@ -195,27 +227,86 @@
         <p v-if="studentsLoading" class="hint">正在加载学生状态...</p>
         <p v-else-if="studentsError" class="error-text">{{ studentsError }}</p>
         <p v-else-if="students.length === 0">当前条件下无数据</p>
-        <div v-else class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>选择</th>
-                <th>学生</th>
-                <th>姓名</th>
-                <th>学号</th>
-                <th>班级</th>
-                <th>版本</th>
-                <th>状态</th>
-                <th>批阅</th>
-                <th>工作区</th>
-                <th>批阅时间</th>
-                <th>更新时间</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in students" :key="item.user_id">
-                <td>
+        <div v-else>
+          <div class="table-wrap desktop-only">
+            <table>
+              <thead>
+                <tr>
+                  <th>选择</th>
+                  <th>学生</th>
+                  <th>姓名</th>
+                  <th>学号</th>
+                  <th>班级</th>
+                  <th>版本</th>
+                  <th>状态</th>
+                  <th>批阅</th>
+                  <th>工作区</th>
+                  <th>批阅时间</th>
+                  <th>更新时间</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in students" :key="item.user_id">
+                  <td>
+                    <input
+                      type="checkbox"
+                      :checked="selectedUserIds.includes(item.user_id)"
+                      :disabled="!canSelectStudent(item) || studentsLoading || batchReturning || batchReviewing"
+                      :title="canSelectStudent(item) ? '可用于批量退回/批量批阅' : '当前没有可退回的最终提交'"
+                      @change="toggleUserSelection(item.user_id, $event.target.checked)"
+                    />
+                  </td>
+                  <td>{{ item.username }}（#{{ item.user_id }}）</td>
+                  <td>{{ item.full_name || "-" }}</td>
+                  <td>{{ item.student_no || "-" }}</td>
+                  <td>{{ item.class_name || "-" }}</td>
+                  <td>v{{ item.latest_version }}</td>
+                  <td>
+                    <span
+                      :class="['status-tag', item.latest_status, 'compact']"
+                      :title="formatLatestStatusText(item.latest_status)"
+                      :aria-label="`提交状态：${formatLatestStatusText(item.latest_status)}`"
+                    >
+                      {{ formatLatestStatusShort(item.latest_status) }}
+                    </span>
+                  </td>
+                  <td>
+                    <span
+                      :class="['review-tag', item.review_status, 'compact']"
+                      :title="formatReviewBadgeText(item.review_status)"
+                      :aria-label="`批阅状态：${formatReviewBadgeText(item.review_status)}`"
+                    >
+                      {{ formatReviewBadgeShort(item.review_status) }}
+                    </span>
+                  </td>
+                  <td class="workspace-cell" :title="item.is_locked ? '已锁定' : '可编辑'">
+                    {{ item.is_locked ? "锁" : "编" }}
+                  </td>
+                  <td>{{ formatTime(item.reviewed_at) }}</td>
+                  <td>{{ formatTime(item.latest_updated_at) }}</td>
+                  <td class="actions">
+                    <button type="button" class="btn light" :disabled="!resolveUserId(item)" @click="openHistoryDrawer(item)">
+                      查看历史
+                    </button>
+                    <button
+                      type="button"
+                      class="btn return"
+                      :disabled="!resolveUserId(item) || !item.can_reopen || returningUserId === item.user_id || batchReturning"
+                      @click="handleReturn(item)"
+                    >
+                      {{ returningUserId === item.user_id ? "退回中..." : "退回" }}
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mobile-only students-mobile-list">
+            <article v-for="item in students" :key="`student-${item.user_id}`" class="student-mobile-card">
+              <div class="student-mobile-head">
+                <label class="student-mobile-check">
                   <input
                     type="checkbox"
                     :checked="selectedUserIds.includes(item.user_id)"
@@ -223,49 +314,38 @@
                     :title="canSelectStudent(item) ? '可用于批量退回/批量批阅' : '当前没有可退回的最终提交'"
                     @change="toggleUserSelection(item.user_id, $event.target.checked)"
                   />
-                </td>
-                <td>{{ item.username }}（#{{ item.user_id }}）</td>
-                <td>{{ item.full_name || "-" }}</td>
-                <td>{{ item.student_no || "-" }}</td>
-                <td>{{ item.class_name || "-" }}</td>
-                <td>v{{ item.latest_version }}</td>
-                <td>
-                  <span
-                    :class="['status-tag', item.latest_status, 'compact']"
-                    :title="formatLatestStatusText(item.latest_status)"
-                    :aria-label="`提交状态：${formatLatestStatusText(item.latest_status)}`"
-                  >
-                    {{ formatLatestStatusShort(item.latest_status) }}
-                  </span>
-                </td>
-                <td>
-                  <span
-                    :class="['review-tag', item.review_status, 'compact']"
-                    :title="formatReviewBadgeText(item.review_status)"
-                    :aria-label="`批阅状态：${formatReviewBadgeText(item.review_status)}`"
-                  >
-                    {{ formatReviewBadgeShort(item.review_status) }}
-                  </span>
-                </td>
-                <td class="workspace-cell" :title="item.is_locked ? '已锁定' : '可编辑'">
-                  {{ item.is_locked ? "锁" : "编" }}
-                </td>
-                <td>{{ formatTime(item.reviewed_at) }}</td>
-                <td>{{ formatTime(item.latest_updated_at) }}</td>
-                <td class="actions">
-                  <button type="button" class="btn light" @click="openHistoryDrawer(item)">查看历史</button>
-                  <button
-                    type="button"
-                    class="btn return"
-                    :disabled="!item.can_reopen || returningUserId === item.user_id || batchReturning"
-                    @click="handleReturn(item)"
-                  >
-                    {{ returningUserId === item.user_id ? "退回中..." : "退回" }}
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </label>
+                <div class="student-mobile-identity">
+                  <h4>{{ item.full_name || item.username }}</h4>
+                  <p>{{ item.username }}</p>
+                </div>
+                <span class="student-mobile-version">v{{ item.latest_version }}</span>
+              </div>
+              <div class="student-mobile-meta">
+                <span>班级：{{ item.class_name || "未分班" }}</span>
+                <span>学号：{{ item.student_no || "-" }}</span>
+                <span>工作区：{{ item.is_locked ? "锁定" : "可编辑" }}</span>
+              </div>
+              <div class="student-mobile-statuses">
+                <span :class="['status-tag', item.latest_status]">提交：{{ formatLatestStatusMobile(item.latest_status) }}</span>
+                <span :class="['review-tag', item.review_status]">批阅：{{ formatReviewStatus(item.review_status) }}</span>
+              </div>
+              <p class="student-mobile-time">更新：{{ formatTime(item.latest_updated_at) }}</p>
+              <div class="student-mobile-actions">
+                <button type="button" class="btn light" :disabled="!resolveUserId(item)" @click="openHistoryDrawer(item)">
+                  查看历史
+                </button>
+                <button
+                  type="button"
+                  class="btn return"
+                  :disabled="!resolveUserId(item) || !item.can_reopen || returningUserId === item.user_id || batchReturning"
+                  @click="handleReturn(item)"
+                >
+                  {{ returningUserId === item.user_id ? "退回中..." : "退回" }}
+                </button>
+              </div>
+            </article>
+          </div>
         </div>
 
         <div class="pagination">
@@ -299,7 +379,15 @@
   </section>
 
   <div v-show="isHistoryDrawerOpen" class="drawer-mask" @click.self="closeHistoryDrawer">
-    <aside class="history-drawer" role="dialog" aria-modal="true">
+    <aside
+      :class="['history-drawer', isHistoryDrawerDragging ? 'dragging' : '']"
+      :style="historyDrawerStyle"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="drawer-drag-handle" title="向下拖拽可关闭" @pointerdown="handleDrawerDragStart">
+        <span></span>
+      </div>
       <div class="drawer-head">
         <div class="drawer-title">
           <h3>历史记录</h3>
@@ -350,8 +438,8 @@
               :class="['history-item', selectedSubmissionId === item.id ? 'active' : '']"
               @click="loadSubmissionDetail(item.id)"
             >
-              <div>v{{ item.version }} ｜ {{ item.status }}</div>
-              <div>{{ formatTime(item.updated_at) }}</div>
+              <span class="history-item-main">v{{ item.version }} ｜ {{ item.status }}</span>
+              <span class="history-item-time">{{ formatTime(item.updated_at) }}</span>
             </button>
           </div>
         </div>
@@ -480,6 +568,10 @@ const studentsRequestToken = ref(0);
 const historyRequestToken = ref(0);
 const detailRequestToken = ref(0);
 const pageScrollTop = ref(0);
+const historyDrawerOffsetY = ref(0);
+const isHistoryDrawerDragging = ref(false);
+const historyDrawerDragStartY = ref(0);
+const historyDrawerDragStartOffsetY = ref(0);
 
 const returningUserId = ref(null);
 const batchReturning = ref(false);
@@ -524,7 +616,10 @@ const historyLatestStatus = computed(() => historyStudent.value?.latest_status |
 const historyLockText = computed(() => (historyStudent.value?.is_locked ? "已锁定" : "可编辑"));
 const historyCanReopen = computed(() => Boolean(isTeacher.value && historyStudent.value?.can_reopen));
 const selectableUserIds = computed(() =>
-  students.value.filter((item) => canSelectStudent(item)).map((item) => item.user_id),
+  students.value
+    .filter((item) => canSelectStudent(item))
+    .map((item) => resolveUserId(item))
+    .filter((userId) => userId !== null),
 );
 const selectedCount = computed(() => selectedUserIds.value.length);
 const isAllSelectableChecked = computed(
@@ -536,7 +631,10 @@ const canBatchReturn = computed(
 const selectedSubmissionIds = computed(() => {
   const selectedIdSet = new Set(selectedUserIds.value);
   return students.value
-    .filter((item) => selectedIdSet.has(item.user_id) && item.latest_status === "submitted")
+    .filter((item) => {
+      const itemUserId = resolveUserId(item);
+      return itemUserId !== null && selectedIdSet.has(itemUserId) && item.latest_status === "submitted";
+    })
     .map((item) => Number(item.latest_submission_id))
     .filter((id) => Number.isInteger(id) && id > 0);
 });
@@ -544,6 +642,9 @@ const canBatchReview = computed(
   () => selectedSubmissionIds.value.length > 0 && !batchReviewing.value && !studentsLoading.value,
 );
 const experimentPublishLabel = computed(() => (experimentSettings.value?.is_published ? "已发布" : "未发布"));
+const historyDrawerStyle = computed(() => ({
+  transform: `translate3d(0, ${historyDrawerOffsetY.value}px, 0)`,
+}));
 
 function formatTime(value) {
   return formatApiDateTime(value);
@@ -587,6 +688,25 @@ function formatLatestStatusShort(value) {
   return "-";
 }
 
+function formatLatestStatusMobile(value) {
+  if (value === "submitted") {
+    return "已提交";
+  }
+  if (value === "draft") {
+    return "草稿";
+  }
+  return "-";
+}
+
+function formatSubmitRate(submittedCount, totalStudents) {
+  const total = Number(totalStudents) || 0;
+  const submitted = Number(submittedCount) || 0;
+  if (total <= 0) {
+    return "0%";
+  }
+  return `${Math.round((submitted / total) * 100)}%`;
+}
+
 function formatReviewBadgeShort(value) {
   if (value === "pending") {
     return "待";
@@ -607,8 +727,29 @@ function formatReviewBadgeText(value) {
   return "待批阅";
 }
 
+function resolveUserId(value) {
+  const rawUserId = value?.user_id ?? value?.userId ?? value?.id ?? null;
+  const parsedUserId = Number(rawUserId);
+  if (!Number.isInteger(parsedUserId) || parsedUserId <= 0) {
+    return null;
+  }
+  return parsedUserId;
+}
+
+function normalizeStudentItem(item) {
+  const normalizedUserId = resolveUserId(item);
+  return {
+    ...item,
+    user_id: normalizedUserId,
+  };
+}
+
+function getHistoryStudentUserId() {
+  return resolveUserId(historyStudent.value);
+}
+
 function canSelectStudent(item) {
-  return Boolean(item && (item.has_final_submission || item.is_locked));
+  return Boolean(item && resolveUserId(item) !== null && (item.has_final_submission || item.is_locked));
 }
 
 function clearSelectedUsers() {
@@ -670,7 +811,66 @@ function resetHistoryState() {
   reviewForm.review_comment = "";
 }
 
+function clampNumber(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function resetHistoryDrawerDrag() {
+  isHistoryDrawerDragging.value = false;
+  historyDrawerOffsetY.value = 0;
+  historyDrawerDragStartY.value = 0;
+  historyDrawerDragStartOffsetY.value = 0;
+}
+
+function handleDrawerDragStart(event) {
+  if (!isHistoryDrawerOpen.value) {
+    return;
+  }
+  if (event.pointerType === "mouse" && event.button !== 0) {
+    return;
+  }
+  isHistoryDrawerDragging.value = true;
+  historyDrawerDragStartY.value = event.clientY;
+  historyDrawerDragStartOffsetY.value = historyDrawerOffsetY.value;
+  event.preventDefault();
+}
+
+function handleWindowPointerMove(event) {
+  if (!isHistoryDrawerDragging.value) {
+    return;
+  }
+  const deltaY = event.clientY - historyDrawerDragStartY.value;
+  const maxOffset = typeof window !== "undefined" ? Math.max(260, Math.round(window.innerHeight * 0.88)) : 640;
+  const nextOffset = historyDrawerDragStartOffsetY.value + Math.max(0, deltaY);
+  historyDrawerOffsetY.value = clampNumber(nextOffset, 0, maxOffset);
+  event.preventDefault();
+}
+
+function finishHistoryDrawerDrag() {
+  if (!isHistoryDrawerDragging.value) {
+    return;
+  }
+  const closeThreshold = typeof window !== "undefined" ? Math.max(120, Math.round(window.innerHeight * 0.16)) : 180;
+  const shouldClose = historyDrawerOffsetY.value >= closeThreshold;
+  isHistoryDrawerDragging.value = false;
+  if (shouldClose) {
+    historyDrawerOffsetY.value = 0;
+    closeHistoryDrawer();
+    return;
+  }
+  historyDrawerOffsetY.value = 0;
+}
+
+function handleWindowPointerUp() {
+  finishHistoryDrawerDrag();
+}
+
+function handleWindowPointerCancel() {
+  finishHistoryDrawerDrag();
+}
+
 function closeHistoryDrawer() {
+  resetHistoryDrawerDrag();
   savePageScrollPosition();
   historyRequestToken.value += 1;
   detailRequestToken.value += 1;
@@ -835,15 +1035,17 @@ async function loadStudents() {
     if (requestToken !== studentsRequestToken.value) {
       return;
     }
-    students.value = data.items || [];
-    const currentUserIds = new Set(students.value.map((item) => item.user_id));
+    students.value = (data.items || []).map((item) => normalizeStudentItem(item));
+    const currentUserIds = new Set(students.value.map((item) => resolveUserId(item)).filter((id) => id !== null));
     selectedUserIds.value = selectedUserIds.value.filter((id) => currentUserIds.has(id));
     pagination.total = data.total || 0;
     pagination.page = data.page || pagination.page;
     pagination.page_size = data.page_size || pagination.page_size;
     pagination.total_pages = data.total_pages || 0;
     if (isHistoryDrawerOpen.value && historyStudent.value) {
-      const updated = students.value.find((item) => item.user_id === historyStudent.value.user_id);
+      const historyUserId = getHistoryStudentUserId();
+      const updated =
+        historyUserId === null ? null : students.value.find((item) => resolveUserId(item) === historyUserId);
       if (updated) {
         historyStudent.value = updated;
       }
@@ -887,12 +1089,13 @@ async function handleBatchReturn() {
     actionError.value = result.success_count === 0 && result.failed_count > 0;
     await Promise.all([loadStudents(), loadClassSummary()]);
     clearSelectedUsers();
-    if (isHistoryDrawerOpen.value && historyStudent.value && targetUserIds.includes(historyStudent.value.user_id)) {
-      const updated = students.value.find((item) => item.user_id === historyStudent.value.user_id);
+    const historyUserId = getHistoryStudentUserId();
+    if (isHistoryDrawerOpen.value && historyUserId !== null && targetUserIds.includes(historyUserId)) {
+      const updated = students.value.find((item) => resolveUserId(item) === historyUserId);
       if (updated) {
         historyStudent.value = updated;
       }
-      await loadHistoryList(historyStudent.value.user_id, true);
+      await loadHistoryList(historyUserId, true);
       if (selectedSubmissionId.value) {
         const stillExists = historyList.value.some((item) => item.id === selectedSubmissionId.value);
         if (stillExists) {
@@ -931,8 +1134,9 @@ async function handleBatchReview() {
     actionMessage.value = summary;
     actionError.value = result.success_count === 0 && result.failed_count > 0;
     await Promise.all([loadStudents(), loadClassSummary()]);
-    if (isHistoryDrawerOpen.value && historyStudent.value?.user_id) {
-      await loadHistoryList(historyStudent.value.user_id, true);
+    const historyUserId = getHistoryStudentUserId();
+    if (isHistoryDrawerOpen.value && historyUserId !== null) {
+      await loadHistoryList(historyUserId, true);
       if (selectedSubmissionId.value) {
         const stillExists = historyList.value.some((item) => item.id === selectedSubmissionId.value);
         if (stillExists) {
@@ -955,8 +1159,17 @@ async function loadHistoryList(userId, preserveSelection = false) {
   historyLoading.value = true;
   historyError.value = "";
   const previousSelectedId = preserveSelection ? selectedSubmissionId.value : null;
+  const normalizedUserId = Number(userId);
+  if (!Number.isInteger(normalizedUserId) || normalizedUserId <= 0) {
+    historyError.value = "历史记录加载失败：缺少有效的用户标识";
+    historyList.value = [];
+    if (requestToken === historyRequestToken.value) {
+      historyLoading.value = false;
+    }
+    return;
+  }
   try {
-    const list = await getTeacherStudentHistory(experimentId.value, userId);
+    const list = await getTeacherStudentHistory(experimentId.value, normalizedUserId);
     if (requestToken !== historyRequestToken.value) {
       return;
     }
@@ -984,22 +1197,25 @@ async function loadHistoryList(userId, preserveSelection = false) {
 
 async function openHistoryDrawer(student) {
   savePageScrollPosition();
+  resetHistoryDrawerDrag();
   isHistoryDrawerOpen.value = true;
-  historyStudent.value = student;
+  const normalizedUserId = resolveUserId(student);
+  historyStudent.value = normalizedUserId === null ? student : { ...student, user_id: normalizedUserId };
   historyList.value = [];
   selectedSubmissionId.value = null;
   detailError.value = "";
   submissionDetail.value = null;
-  await loadHistoryList(student.user_id, false);
+  await loadHistoryList(normalizedUserId, false);
   await restorePageScrollPosition();
 }
 
 async function refreshHistory() {
-  if (!historyStudent.value) {
+  const historyUserId = getHistoryStudentUserId();
+  if (!historyStudent.value || historyUserId === null) {
     return;
   }
   savePageScrollPosition();
-  await loadHistoryList(historyStudent.value.user_id, true);
+  await loadHistoryList(historyUserId, true);
   await restorePageScrollPosition();
 }
 
@@ -1050,8 +1266,9 @@ async function saveReview() {
     reviewForm.review_comment = detail.review_comment || "";
     actionMessage.value = "批阅已保存";
     await Promise.all([loadStudents(), loadClassSummary()]);
-    if (historyStudent.value?.user_id) {
-      await loadHistoryList(historyStudent.value.user_id, true);
+    const historyUserId = getHistoryStudentUserId();
+    if (historyUserId !== null) {
+      await loadHistoryList(historyUserId, true);
     }
   } catch (error) {
     actionError.value = true;
@@ -1064,7 +1281,8 @@ async function saveReview() {
 
 async function handleReturn(student, options = {}) {
   const { preserveSelection = false, preserveDetail = false } = options;
-  if (!student || !student.can_reopen) {
+  const studentUserId = resolveUserId(student);
+  if (!student || !student.can_reopen || studentUserId === null) {
     return;
   }
   const confirmed = window.confirm(
@@ -1076,17 +1294,18 @@ async function handleReturn(student, options = {}) {
   savePageScrollPosition();
   actionMessage.value = "";
   actionError.value = false;
-  returningUserId.value = student.user_id;
+  returningUserId.value = studentUserId;
   try {
-    await returnTeacherStudentExperiment(experimentId.value, student.user_id);
+    await returnTeacherStudentExperiment(experimentId.value, studentUserId);
     actionMessage.value = "已退回，该用户可继续修改并重新提交";
     await Promise.all([loadStudents(), loadClassSummary()]);
-    if (isHistoryDrawerOpen.value && historyStudent.value?.user_id === student.user_id && historyStudent.value) {
-      const updated = students.value.find((item) => item.user_id === student.user_id);
+    const historyUserId = getHistoryStudentUserId();
+    if (isHistoryDrawerOpen.value && historyUserId === studentUserId && historyStudent.value) {
+      const updated = students.value.find((item) => resolveUserId(item) === studentUserId);
       if (updated) {
         historyStudent.value = updated;
       }
-      await loadHistoryList(student.user_id, preserveSelection);
+      await loadHistoryList(studentUserId, preserveSelection);
       if (preserveDetail && selectedSubmissionId.value) {
         const stillExists = historyList.value.some((item) => item.id === selectedSubmissionId.value);
         if (stillExists) {
@@ -1167,40 +1386,55 @@ watch(
 
 onMounted(async () => {
   window.addEventListener("keydown", handleKeydown);
+  window.addEventListener("pointermove", handleWindowPointerMove, { passive: false });
+  window.addEventListener("pointerup", handleWindowPointerUp);
+  window.addEventListener("pointercancel", handleWindowPointerCancel);
   await initializePage();
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("keydown", handleKeydown);
+  window.removeEventListener("pointermove", handleWindowPointerMove);
+  window.removeEventListener("pointerup", handleWindowPointerUp);
+  window.removeEventListener("pointercancel", handleWindowPointerCancel);
 });
 </script>
 
 <style scoped>
 .teacher-page {
   display: grid;
-  gap: 16px;
+  gap: clamp(14px, 1.8vw, 22px);
 }
 
 .panel {
-  background: var(--surface-1);
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  padding: 18px;
+  background: color-mix(in srgb, var(--surface-1) 92%, var(--brand-soft) 8%);
+  border: 1px solid color-mix(in srgb, var(--border-soft) 74%, var(--brand-border) 26%);
+  border-radius: 14px;
+  padding: clamp(14px, 1.8vw, 20px);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--brand-border) 12%, transparent);
 }
 
 .header-panel h2 {
   margin: 0;
+  font-size: clamp(24px, 2.1vw, 30px);
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  color: color-mix(in srgb, var(--text-strong) 90%, var(--brand-700) 10%);
 }
 
 .header-panel p {
   margin: 8px 0;
-  color: var(--text-muted);
+  color: color-mix(in srgb, var(--text-muted) 86%, var(--brand-700) 14%);
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .back-link {
-  color: var(--brand-600);
+  color: color-mix(in srgb, var(--brand-700) 88%, var(--text-strong) 12%);
   text-decoration: none;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .error {
@@ -1224,7 +1458,9 @@ onBeforeUnmount(() => {
 }
 
 .settings-panel h3 {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
+  font-size: clamp(18px, 1.4vw, 22px);
+  line-height: 1.2;
 }
 
 .settings-grid {
@@ -1244,14 +1480,15 @@ onBeforeUnmount(() => {
 
 .publish-control {
   min-height: 42px;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 72%, var(--brand-border) 28%);
+  border-radius: 10px;
   padding: 8px 10px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   color: var(--text-strong);
-  font-size: 14px;
+  font-size: 13px;
+  background: color-mix(in srgb, var(--surface-1) 88%, var(--brand-soft) 12%);
 }
 
 .publish-control input {
@@ -1259,12 +1496,20 @@ onBeforeUnmount(() => {
 }
 
 .settings-meta {
-  margin-top: 10px;
+  margin-top: 12px;
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px;
   color: var(--text-body);
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.settings-meta span {
+  border: 1px solid color-mix(in srgb, var(--border-soft) 70%, var(--brand-border) 30%);
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: color-mix(in srgb, var(--surface-2) 84%, var(--brand-soft) 16%);
 }
 
 @media (max-width: 1100px) {
@@ -1280,7 +1525,9 @@ onBeforeUnmount(() => {
 }
 
 .filter-panel h3 {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
+  font-size: clamp(18px, 1.4vw, 22px);
+  line-height: 1.2;
 }
 
 .filter-grid {
@@ -1292,22 +1539,26 @@ onBeforeUnmount(() => {
 .filter-item {
   display: grid;
   gap: 6px;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-body);
+  line-height: 1.35;
 }
 
 .filter-item input,
 .filter-item select {
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 14px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 72%, var(--brand-border) 28%);
+  border-radius: 10px;
+  padding: 9px 10px;
+  font-size: 13px;
+  color: var(--text-strong);
+  background: color-mix(in srgb, var(--surface-1) 88%, var(--brand-soft) 12%);
 }
 
 .filter-actions {
   margin-top: 12px;
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .table-header {
@@ -1315,30 +1566,37 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .table-header h3 {
   margin: 0;
+  font-size: clamp(18px, 1.4vw, 22px);
+  line-height: 1.2;
 }
 
 .table-meta {
-  color: var(--text-subtle);
-  font-size: 14px;
+  color: color-mix(in srgb, var(--text-subtle) 84%, var(--brand-700) 16%);
+  font-size: 13px;
 }
 
 .batch-ops {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 72%, var(--brand-border) 28%);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-2) 84%, var(--brand-soft) 16%);
 }
 
 .batch-meta {
   color: var(--text-body);
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 .batch-actions {
@@ -1347,12 +1605,26 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
 }
 
+.batch-select-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 2px;
+  color: color-mix(in srgb, var(--text-body) 88%, var(--brand-700) 12%);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .batch-select,
 .batch-comment {
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  padding: 7px 10px;
-  font-size: 14px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 72%, var(--brand-border) 28%);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  background: color-mix(in srgb, var(--surface-1) 88%, var(--brand-soft) 12%);
+  color: var(--text-strong);
 }
 
 .batch-comment {
@@ -1360,11 +1632,22 @@ onBeforeUnmount(() => {
 }
 
 .table-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 74%, var(--brand-border) 26%);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-1) 94%, var(--brand-soft) 6%);
+  scrollbar-gutter: stable;
 }
 
 table {
-  width: 100%;
+  width: max-content;
   border-collapse: collapse;
   min-width: 1180px;
 }
@@ -1372,14 +1655,27 @@ table {
 th,
 td {
   border-bottom: 1px solid var(--border-soft);
-  padding: 10px 8px;
+  padding: 10px 9px;
   text-align: left;
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 th {
-  color: var(--text-body);
+  color: color-mix(in srgb, var(--text-body) 88%, var(--brand-700) 12%);
   font-weight: 700;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--surface-2) 88%, var(--brand-soft) 12%);
+}
+
+tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+tbody tr:hover {
+  background: color-mix(in srgb, var(--brand-soft) 42%, var(--surface-1) 58%);
 }
 
 .actions {
@@ -1405,11 +1701,18 @@ th {
 
 .btn {
   border: none;
-  border-radius: 8px;
-  padding: 7px 10px;
+  border-radius: 10px;
+  min-height: 38px;
+  padding: 8px 11px;
   cursor: pointer;
   color: var(--surface-1);
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    filter 0.18s ease;
 }
 
 .btn.light {
@@ -1435,6 +1738,23 @@ th {
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  filter: saturate(1.03);
+}
+
+.btn:focus-visible,
+.back-link:focus-visible,
+.filter-item input:focus-visible,
+.filter-item select:focus-visible,
+.batch-select:focus-visible,
+.batch-comment:focus-visible,
+.publish-control:focus-within {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 .status-tag {
@@ -1520,147 +1840,517 @@ th {
   align-items: center;
   gap: 8px;
   color: var(--text-body);
+  font-size: 13px;
+}
+
+.desktop-only {
+  display: block;
+}
+
+.mobile-only {
+  display: none;
+}
+
+.summary-mobile-list,
+.students-mobile-list {
+  gap: 10px;
+}
+
+.summary-mobile-card,
+.student-mobile-card {
+  border: 1px solid color-mix(in srgb, var(--border-soft) 74%, var(--brand-border) 26%);
+  border-radius: 12px;
+  padding: 11px;
+  background: color-mix(in srgb, var(--surface-1) 94%, var(--brand-soft) 6%);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--brand-border) 10%, transparent);
+}
+
+.summary-mobile-head,
+.student-mobile-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.summary-mobile-head h4,
+.student-mobile-identity h4 {
+  margin: 0;
   font-size: 14px;
+  line-height: 1.25;
+  color: var(--text-strong);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summary-mobile-rate {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--brand-border) 74%, var(--border-soft) 26%);
+  background: color-mix(in srgb, var(--surface-2) 82%, var(--brand-soft) 18%);
+  color: var(--brand-700);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 9px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.summary-mobile-metrics {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.summary-mobile-metrics > div {
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 76%, var(--brand-border) 24%);
+  background: color-mix(in srgb, var(--surface-1) 88%, var(--brand-soft) 12%);
+  padding: 8px;
+  display: grid;
+  gap: 2px;
+}
+
+.summary-mobile-metrics span {
+  font-size: 11px;
+  color: var(--text-subtle);
+}
+
+.summary-mobile-metrics strong {
+  font-size: 15px;
+  color: var(--text-strong);
+}
+
+.summary-mobile-foot {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--text-subtle);
+}
+
+.student-mobile-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+}
+
+.student-mobile-identity {
+  flex: 1;
+  min-width: 0;
+}
+
+.student-mobile-identity p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--text-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.student-mobile-version {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brand-700);
+  white-space: nowrap;
+}
+
+.student-mobile-meta {
+  margin-top: 8px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.student-mobile-meta span {
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--text-subtle);
+  border: 1px solid color-mix(in srgb, var(--border-soft) 78%, var(--brand-border) 22%);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-1) 90%, var(--brand-soft) 10%);
+  padding: 3px 7px;
+}
+
+.student-mobile-statuses {
+  margin-top: 8px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.student-mobile-statuses .status-tag,
+.student-mobile-statuses .review-tag {
+  font-size: 12px;
+  min-height: 24px;
+  padding: 3px 9px;
+}
+
+.student-mobile-time {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--text-subtle);
+}
+
+.student-mobile-actions {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.student-mobile-actions .btn {
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .desktop-only {
+    display: none !important;
+  }
+
+  .mobile-only {
+    display: grid;
+  }
+}
+
+@media (max-width: 1180px) {
+  .filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .batch-actions {
+    width: 100%;
+  }
+
+  .batch-comment {
+    min-width: min(280px, 100%);
+    flex: 1 1 240px;
+  }
+}
+
+@media (max-width: 860px) {
+  .settings-grid,
+  .filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .table-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filter-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .batch-ops {
+    padding: 10px;
+  }
+
+  .batch-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .batch-select,
+  .batch-comment {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .batch-select-label {
+    min-height: 0;
+    padding: 2px 0;
+  }
+
+  .pagination {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .panel {
+    padding: 12px;
+  }
+
+  .filter-actions,
+  .batch-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .student-mobile-actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 .drawer-mask {
   position: fixed;
   inset: 0;
-  background: var(--overlay-soft);
+  background: color-mix(in srgb, var(--overlay-soft) 86%, var(--brand-soft) 14%);
+  backdrop-filter: blur(3px);
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 8px 8px 0;
   z-index: var(--z-drawer);
 }
 
 .history-drawer {
-  width: min(980px, 92vw);
-  height: 100dvh;
+  width: min(1520px, 99vw);
+  height: calc(100dvh - 8px);
   background: var(--surface-1);
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto auto;
   box-shadow: var(--shadow-elevated);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  border-left: 1px solid color-mix(in srgb, var(--border-soft) 72%, var(--brand-border) 28%);
+  border-radius: 16px 16px 0 0;
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.history-drawer.dragging {
+  transition: none;
+}
+
+.drawer-drag-handle {
+  height: 24px;
+  display: grid;
+  place-items: center;
+  touch-action: none;
+  cursor: grab;
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: color-mix(in srgb, var(--surface-1) 88%, var(--brand-soft) 12%);
+  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 74%, var(--brand-border) 26%);
+}
+
+.drawer-drag-handle:active {
+  cursor: grabbing;
+}
+
+.drawer-drag-handle span {
+  width: clamp(64px, 9vw, 92px);
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand-border) 62%, var(--border-strong) 38%);
 }
 
 .drawer-head {
   border-bottom: 1px solid var(--border-soft);
-  padding: 14px 16px;
+  padding: clamp(14px, 1.8vw, 20px) clamp(14px, 1.9vw, 22px);
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
   align-items: center;
+  position: sticky;
+  top: 24px;
+  z-index: 5;
+  background: color-mix(in srgb, var(--surface-1) 92%, var(--brand-soft) 8%);
 }
 
 .drawer-title h3 {
   margin: 0;
+  font-size: clamp(20px, 1.4vw, 24px);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
 }
 
 .drawer-title p {
   margin: 6px 0 0;
-  color: var(--text-muted);
+  color: color-mix(in srgb, var(--text-muted) 86%, var(--brand-700) 14%);
   font-size: 14px;
+  line-height: 1.45;
 }
 
 .drawer-status-line {
-  margin-top: 6px;
+  margin-top: 8px;
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
   color: var(--text-body);
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.35;
   align-items: center;
 }
 
 .return-hint {
-  margin: 6px 0 0;
+  margin: 8px 0 0;
 }
 
 .drawer-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .drawer-body {
-  min-height: 0;
+  min-height: auto;
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: clamp(278px, 25vw, 348px) minmax(0, 1fr);
+  align-items: start;
 }
 
 .history-column {
   border-right: 1px solid var(--border-soft);
-  padding: 12px;
-  min-height: 0;
+  padding: clamp(12px, 1.4vw, 16px);
+  min-height: auto;
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 10px;
+  overflow: visible;
 }
 
 .history-list {
   display: grid;
-  gap: 8px;
-  max-height: calc(100vh - 170px);
+  gap: 10px;
+  max-height: min(72dvh, 760px);
+  min-height: 120px;
+  min-width: 0;
+  height: auto;
+  align-content: start;
+  grid-auto-rows: max-content;
   overflow-y: auto;
-  padding-right: 2px;
+  padding-right: 6px;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .history-item {
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  background: var(--surface-3);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 70%, var(--brand-border) 30%);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-3) 90%, var(--brand-soft) 10%);
   text-align: left;
-  padding: 8px 10px;
+  min-height: 58px;
+  padding: 11px 12px;
   cursor: pointer;
-  display: grid;
-  gap: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-body);
+  font-size: 13px;
+  line-height: 1.35;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.history-item:hover {
+  border-color: var(--brand-border-strong);
+  background: color-mix(in srgb, var(--brand-soft-2) 58%, var(--surface-2) 42%);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-soft) 40%, transparent);
 }
 
 .history-item.active {
   border-color: var(--brand-600);
-  background: var(--brand-soft);
+  background: color-mix(in srgb, var(--brand-soft) 66%, var(--surface-2) 34%);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-soft) 54%, transparent);
+}
+
+.history-item-main,
+.history-item-time {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.history-item-main {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.32;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.history-item-time {
+  font-size: 12px;
+  line-height: 1.38;
+  color: color-mix(in srgb, var(--text-muted) 88%, var(--brand-700) 12%);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .detail-column {
-  padding: 12px;
-  min-height: 0;
+  padding: clamp(12px, 1.4vw, 16px);
+  min-height: auto;
+  overflow: visible;
 }
 
 .detail-wrap {
-  height: 100%;
+  height: auto;
   display: grid;
-  grid-template-rows: auto auto 1fr;
-  gap: 10px;
+  grid-template-rows: auto auto auto;
+  gap: 12px;
 }
 
 .detail-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   color: var(--text-body);
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.detail-meta span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 70%, var(--brand-border) 30%);
+  background: color-mix(in srgb, var(--surface-2) 84%, var(--brand-soft) 16%);
 }
 
 .review-panel {
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
-  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 74%, var(--brand-border) 26%);
+  border-radius: 12px;
+  padding: 12px;
   display: grid;
-  gap: 8px;
+  gap: 10px;
+  background: color-mix(in srgb, var(--surface-2) 86%, var(--brand-soft) 14%);
 }
 
 .review-panel h4 {
   margin: 0;
+  font-size: 16px;
+  line-height: 1.25;
 }
 
 .review-item {
   display: grid;
   gap: 6px;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-body);
+  line-height: 1.35;
 }
 
 .review-item select,
 .review-item textarea {
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 14px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 72%, var(--brand-border) 28%);
+  border-radius: 10px;
+  padding: 9px 11px;
+  font-size: 13px;
+  color: var(--text-strong);
+  background: color-mix(in srgb, var(--surface-1) 88%, var(--brand-soft) 12%);
 }
 
 .review-actions {
@@ -1669,39 +2359,125 @@ th {
 }
 
 .detail-scroll {
-  min-height: 0;
-  max-height: calc(100vh - 220px);
-  overflow-y: auto;
+  min-height: auto;
+  overflow: visible;
   display: grid;
-  gap: 10px;
-  padding-right: 2px;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  padding-right: 4px;
 }
 
 .io-block {
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 72%, var(--brand-border) 28%);
+  border-radius: 12px;
   overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  background: color-mix(in srgb, var(--surface-1) 90%, var(--brand-soft) 10%);
 }
 
 .io-title {
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--border-soft);
-  padding: 8px 10px;
+  background: color-mix(in srgb, var(--surface-2) 80%, var(--brand-soft) 20%);
+  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 72%, var(--brand-border) 28%);
+  padding: 10px 12px;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: color-mix(in srgb, var(--brand-800) 92%, var(--text-strong) 8%);
 }
 
-pre {
+.io-block pre {
   margin: 0;
-  padding: 10px;
-  max-height: 320px;
+  padding: 12px 14px;
+  min-height: clamp(420px, 58vh, 860px);
+  max-height: clamp(520px, 76vh, 1040px);
   overflow: auto;
-  background: var(--surface-1);
+  background: color-mix(in srgb, var(--surface-1) 92%, var(--brand-soft) 8%);
+  color: var(--text-strong);
+  font-size: 13px;
+  line-height: 1.58;
+  letter-spacing: 0.01em;
+  font-family: var(--font-mono);
+  tab-size: 2;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.history-list,
+.io-block pre {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--brand-border) 64%, var(--border-strong) 36%) transparent;
+}
+
+.history-list::-webkit-scrollbar,
+.io-block pre::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.history-list::-webkit-scrollbar-thumb,
+.io-block pre::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  background: color-mix(in srgb, var(--brand-border) 64%, var(--border-strong) 36%);
+}
+
+.history-list::-webkit-scrollbar-track,
+.io-block pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (max-width: 1200px) {
+  .history-drawer {
+    width: min(1280px, 99vw);
+  }
+
+  .detail-scroll {
+    padding-right: 2px;
+  }
+}
+
+@media (min-width: 961px) {
+  .history-drawer {
+    overflow: hidden;
+  }
+
+  .drawer-body {
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .history-column,
+  .detail-column {
+    min-height: 0;
+  }
+
+  .history-column {
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
+  }
+
+  .history-list {
+    height: 100%;
+    max-height: none;
+  }
+
+  .detail-scroll {
+    min-height: 0;
+    max-height: 100%;
+    overflow: auto;
+    padding-right: 6px;
+  }
 }
 
 @media (max-width: 960px) {
   .history-drawer {
     width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
   }
 
   .drawer-head {
@@ -1712,7 +2488,7 @@ pre {
   .drawer-actions {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .drawer-body {
@@ -1726,13 +2502,39 @@ pre {
   }
 
   .history-list {
-    max-height: none;
-    overflow-y: visible;
+    max-height: 30vh;
+    overflow-y: auto;
+  }
+
+  .history-item {
+    min-height: 0;
+    padding: 9px 10px;
+    gap: 4px;
   }
 
   .detail-scroll {
     max-height: none;
-    overflow-y: visible;
+    overflow: visible;
+    padding-right: 2px;
   }
+
+  .io-block pre {
+    min-height: 360px;
+    max-height: 68vh;
+  }
+}
+
+@media (max-width: 680px) {
+  .drawer-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .drawer-title p,
+  .drawer-status-line,
+  .detail-meta,
+  .review-item {
+    font-size: 12px;
+  }
+
 }
 </style>

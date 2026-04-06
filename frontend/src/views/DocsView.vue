@@ -591,7 +591,7 @@ onMounted(async () => {
 }
 
 .markdown-body :deep(code) {
-  font-family: Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: var(--font-mono);
   font-size: 14px;
 }
 

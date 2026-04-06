@@ -1,4 +1,22 @@
 :root {
+  --font-sans:
+    "Noto Sans SC",
+    "Source Han Sans SC",
+    "PingFang SC",
+    "Hiragino Sans GB",
+    "Microsoft YaHei",
+    "Segoe UI",
+    sans-serif;
+  --font-mono:
+    "JetBrains Mono",
+    "Cascadia Mono",
+    "SF Mono",
+    "Fira Code",
+    "Consolas",
+    "Menlo",
+    "Liberation Mono",
+    monospace;
+
   --bg-canvas: #d8e2f0;
   --bg-canvas-accent: #d0dced;
   --surface-1: #eef3fa;
@@ -76,12 +94,13 @@
   --z-dialog: 1300;
   --z-drawer: 1400;
 
-  font-family: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: var(--font-sans);
   color: var(--text-body);
   background-color: var(--bg-canvas);
   line-height: 1.6;
   font-weight: 400;
   font-synthesis: none;
+  font-kerning: normal;
   text-rendering: optimizeLegibility;
 }
 
@@ -109,6 +128,7 @@ body {
     radial-gradient(1200px 560px at 5% -10%, rgba(27, 65, 127, 0.09), rgba(27, 65, 127, 0) 62%),
     linear-gradient(180deg, var(--bg-canvas) 0%, var(--bg-canvas-accent) 100%);
   color: var(--text-body);
+  font-family: var(--font-sans);
   font-size: var(--text-md);
   line-height: 1.65;
   overflow-x: hidden;
@@ -166,7 +186,12 @@ select,
 textarea,
 button {
   font: inherit;
+  font-family: var(--font-sans);
   touch-action: manipulation;
+}
+
+:where(code, pre, kbd, samp) {
+  font-family: var(--font-mono);
 }
 
 section,
