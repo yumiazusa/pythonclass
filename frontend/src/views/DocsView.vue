@@ -384,8 +384,8 @@ onMounted(async () => {
 }
 
 .card {
-  background: #fff;
-  border: 1px solid #e5e8f0;
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 16px;
 }
@@ -404,7 +404,7 @@ onMounted(async () => {
 
 .top-row p {
   margin: 8px 0 0;
-  color: #4b5563;
+  color: var(--text-muted);
 }
 
 .actions {
@@ -423,18 +423,18 @@ onMounted(async () => {
 }
 
 .btn.list {
-  background: #e0e7ff;
-  color: #1d4ed8;
+  background: var(--brand-soft-2);
+  color: var(--brand-700);
 }
 
 .btn.editor {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--success-soft);
+  color: var(--success-strong);
 }
 
 .hint {
-  color: #92400e;
-  font-size: 13px;
+  color: var(--warn-strong);
+  font-size: 14px;
 }
 
 .search-row {
@@ -447,14 +447,14 @@ onMounted(async () => {
 .search-row input,
 .search-row select,
 .search-row button {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 8px 10px;
 }
 
 .search-row button {
-  background: #2563eb;
-  color: #fff;
+  background: var(--brand-600);
+  color: var(--surface-1);
   font-weight: 600;
   cursor: pointer;
 }
@@ -469,7 +469,7 @@ onMounted(async () => {
 
 .doc-sidebar {
   overflow-y: auto;
-  border-right: 1px solid #eef2ff;
+  border-right: 1px solid var(--border-soft);
   padding-right: 10px;
 }
 
@@ -478,12 +478,12 @@ onMounted(async () => {
 }
 
 .side-hint {
-  color: #6b7280;
-  font-size: 13px;
+  color: var(--text-subtle);
+  font-size: 14px;
 }
 
 .side-hint.error {
-  color: #b91c1c;
+  color: var(--danger-strong);
 }
 
 .tree-wrap {
@@ -494,7 +494,7 @@ onMounted(async () => {
 .tree-group h4 {
   margin: 0 0 8px;
   font-size: 14px;
-  color: #374151;
+  color: var(--text-body);
 }
 
 .tree-group ul {
@@ -508,24 +508,25 @@ onMounted(async () => {
 .tree-item {
   width: 100%;
   text-align: left;
-  border: 1px solid #e5e8f0;
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
-  background: #fff;
-  color: #374151;
+  background: var(--surface-1);
+  color: var(--text-body);
   padding: 8px 10px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .tree-item:hover {
-  border-color: #93c5fd;
-  background: #f8fbff;
+  border-color: var(--brand-border-strong);
+  background: var(--brand-soft);
 }
 
 .tree-item.active {
-  border-color: #3b82f6;
-  background: #eff6ff;
-  color: #1d4ed8;
+  border-color: var(--brand-600);
+  background: var(--brand-soft);
+  color: var(--brand-700);
   font-weight: 600;
 }
 
@@ -539,7 +540,7 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: baseline;
   gap: 12px;
-  border-bottom: 1px solid #eef2ff;
+  border-bottom: 1px solid var(--border-soft);
   padding-bottom: 10px;
   margin-bottom: 12px;
 }
@@ -549,20 +550,20 @@ onMounted(async () => {
 }
 
 .doc-meta {
-  color: #6b7280;
-  font-size: 12px;
+  color: var(--text-subtle);
+  font-size: 14px;
 }
 
 .content-error {
-  color: #b91c1c;
+  color: var(--danger-strong);
 }
 
 .content-hint {
-  color: #6b7280;
+  color: var(--text-subtle);
 }
 
 .markdown-body {
-  color: #111827;
+  color: var(--text-strong);
   line-height: 1.75;
 }
 
@@ -586,12 +587,12 @@ onMounted(async () => {
   border-radius: 10px;
   padding: 12px;
   overflow-x: auto;
-  border: 1px solid #e5e8f0;
+  border: 1px solid var(--border-soft);
 }
 
 .markdown-body :deep(code) {
   font-family: Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 @media (max-width: 980px) {
@@ -607,14 +608,16 @@ onMounted(async () => {
 
   .doc-sidebar {
     border-right: 0;
-    border-bottom: 1px solid #eef2ff;
+    border-bottom: 1px solid var(--border-soft);
     padding-right: 0;
     padding-bottom: 10px;
-    max-height: 260px;
+    max-height: none;
+    overflow-y: visible;
   }
 
   .doc-content {
     max-height: none;
+    overflow-y: visible;
   }
 }
 </style>

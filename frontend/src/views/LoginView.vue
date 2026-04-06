@@ -78,28 +78,32 @@ async function handleLogin() {
 
 <style scoped>
 .login-page {
-  min-height: calc(100vh - 120px);
+  min-height: calc(100dvh - 90px);
   display: grid;
   place-items: center;
+  padding: clamp(14px, 3vw, 32px);
 }
 
 .login-card {
-  width: min(420px, 92vw);
-  background: #fff;
-  border: 1px solid #e5e8f0;
-  border-radius: 14px;
-  padding: 24px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  width: min(460px, 100%);
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: clamp(18px, 2.4vw, 28px);
+  box-shadow: var(--shadow-soft);
 }
 
 .login-card h2 {
   margin: 0;
+  color: var(--text-strong);
+  font-size: clamp(24px, 2.6vw, 28px);
 }
 
 .subtitle {
-  margin: 8px 0 18px;
-  color: #6b7280;
+  margin: 10px 0 18px;
+  color: var(--text-subtle);
   font-size: 14px;
+  line-height: 1.5;
 }
 
 .login-form {
@@ -114,22 +118,27 @@ async function handleLogin() {
 
 .field span {
   font-size: 13px;
-  color: #374151;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-body);
 }
 
 .field input {
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 12px 12px;
+  min-height: 46px;
+  font-size: 16px;
+  background: var(--surface-2);
 }
 
 .btn-login {
   border: 0;
-  border-radius: 8px;
-  background: #2563eb;
-  color: #fff;
-  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--brand-600);
+  color: var(--surface-1);
+  padding: 12px 14px;
+  min-height: 46px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -141,11 +150,31 @@ async function handleLogin() {
 
 .error-text {
   margin: 12px 0 0;
-  border-radius: 8px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
+  border-radius: var(--radius-sm);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-border);
+  color: var(--danger-strong);
   padding: 10px 12px;
   font-size: 14px;
+}
+
+@media (max-width: 860px) {
+  .login-page {
+    place-items: start center;
+    padding-top: clamp(16px, 6vw, 34px);
+  }
+}
+
+@media (max-width: 520px) {
+  .login-card {
+    border-radius: var(--radius-md);
+    padding: 16px;
+  }
+
+  .subtitle {
+    margin-top: 8px;
+    margin-bottom: 14px;
+    font-size: 14px;
+  }
 }
 </style>

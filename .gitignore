@@ -12,6 +12,8 @@ env/
 node_modules/
 dist/
 .vite/
+!frontend/dist/
+!frontend/dist/**
 
 .idea/
 .vscode/

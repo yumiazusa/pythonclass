@@ -10,8 +10,8 @@
         <button class="btn gray" @click="goExperiments">返回实验列表</button>
         <button class="btn light" :disabled="!hasValidExperimentId" @click="goDocs">查看实验说明</button>
         <button v-if="canUseSubmissionFlow" class="btn light" :disabled="!hasValidExperimentId" @click="toggleHistoryPanel">历史记录</button>
-        <button v-if="hasEditorAccess" class="btn run" :disabled="isBusy || !hasValidExperimentId || !canRun" @click="handleRun">
-          {{ isRunning ? "运行中..." : "运行" }}
+        <button v-if="hasEditorAccess" class="btn run" :disabled="runActionDisabled" @click="handleRunAction">
+          {{ runActionText }}
         </button>
         <button v-if="canUseSubmissionFlow" class="btn save" :disabled="isBusy || !hasValidExperimentId || !canSaveDraft" @click="handleSave">
           {{ isSaving ? "保存中..." : "保存草稿" }}
@@ -100,6 +100,30 @@
           <div v-if="historyVersionHint" class="status-hint">{{ historyVersionHint }}</div>
         </div>
         <div class="editor-shell">
+          <div v-if="hasEditorAccess" class="editor-mini-actions">
+            <button class="mini-action mini-run" :disabled="runActionDisabled" @click="handleRunAction">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M8 5.5v13l10-6.5-10-6.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+              </svg>
+              {{ miniRunActionText }}
+            </button>
+            <button
+              v-if="canUseSubmissionFlow"
+              class="mini-action mini-save"
+              :disabled="isBusy || !hasValidExperimentId || !canSaveDraft"
+              @click="handleSave"
+            >
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M5 4.75h10.2l3.05 3.05V19.25H5V4.75Zm3.5 0v5.2h6.4v-5.2m-6.4 14.5v-5.3h6.9v5.3"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              {{ isSaving ? "保存中" : "保存" }}
+            </button>
+          </div>
           <div ref="editorContainer" class="editor-instance"></div>
           <div v-if="isPageLoading" class="editor-overlay">正在加载实验数据...</div>
         </div>
@@ -112,6 +136,7 @@
       :loading="isRunning"
       :result="runResult"
       :message="message"
+      :run-owner-label="runOwnerLabel"
       :rerun-disabled="rerunDisabled"
       :save-visible="canUseSubmissionFlow"
       :save-disabled="saveInDrawerDisabled"
@@ -151,10 +176,18 @@ import RunResultDrawer from "../components/RunResultDrawer.vue";
 const defaultCode = 'print("hello world")';
 const fallbackExperimentId = Number(import.meta.env.VITE_EXPERIMENT_ID);
 const autoSaveDelayMs = 90000;
+const runResultStorageNamespace = "edu:last-run-result:code-editor";
 
 const route = useRoute();
 const router = useRouter();
-const viewerRole = ref(getStoredCurrentUser()?.role || localStorage.getItem("role") || "");
+const currentViewer = getStoredCurrentUser() || {};
+const viewerRole = ref(currentViewer?.role || localStorage.getItem("role") || "");
+const runResultOwnerKey = String(currentViewer?.id || currentViewer?.username || "anonymous");
+const runOwnerLabel = computed(() => {
+  const roleText = viewerRole.value === "admin" ? "管理员" : viewerRole.value === "teacher" ? "教师" : "学生";
+  const name = currentViewer?.full_name || currentViewer?.username || "当前用户";
+  return `${name}（${roleText}）`;
+});
 
 const experiment = ref(null);
 const currentCode = ref(defaultCode);
@@ -227,6 +260,9 @@ function parseExperimentId(rawValue) {
 
 const experimentId = computed(() => parseExperimentId(route.query.experiment_id));
 const hasValidExperimentId = computed(() => experimentId.value > 0);
+const runResultStorageKey = computed(() =>
+  hasValidExperimentId.value ? `${runResultStorageNamespace}:${runResultOwnerKey}:${experimentId.value}` : "",
+);
 const experimentTitle = computed(() => experiment.value?.title || `实验${experimentId.value || "-"}：在线代码练习`);
 const experimentDescription = computed(() => experiment.value?.description || "编辑代码后可直接运行并保存草稿");
 const isBusy = computed(() => isRunning.value || isSaving.value || isSubmitting.value || isPageLoading.value);
@@ -302,6 +338,20 @@ const rerunDisabled = computed(() => !hasEditorAccess.value || !hasValidExperime
 const saveInDrawerDisabled = computed(
   () => !hasEditorAccess.value || !hasValidExperimentId.value || !canSaveDraft.value || isBusy.value,
 );
+const hasRunResult = computed(() => Boolean(runResult.value));
+const runActionDisabled = computed(
+  () => isBusy.value || !hasValidExperimentId.value || (!canRun.value && !hasRunResult.value),
+);
+const runActionText = computed(() => {
+  if (isRunning.value) return "运行中...";
+  if (!canRun.value && hasRunResult.value) return "查看运行结果";
+  return "运行";
+});
+const miniRunActionText = computed(() => {
+  if (isRunning.value) return "运行中";
+  if (!canRun.value && hasRunResult.value) return "查看结果";
+  return "运行";
+});
 const accessRestrictionMessage = computed(() => accessRestriction.value.message || "当前实验暂不可访问");
 const accessRestrictionTitle = computed(() => {
   if (accessRestriction.value.reason === "unpublished") {
@@ -549,6 +599,43 @@ function formatTime(value) {
   return formatApiDateTime(value);
 }
 
+function restoreRunResultSnapshot() {
+  if (!runResultStorageKey.value || typeof window === "undefined") {
+    return null;
+  }
+  try {
+    const raw = window.localStorage.getItem(runResultStorageKey.value);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    const snapshot = parsed?.result;
+    if (!snapshot || typeof snapshot !== "object") {
+      return null;
+    }
+    return snapshot;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function saveRunResultSnapshot(nextResult) {
+  if (!runResultStorageKey.value || typeof window === "undefined" || !nextResult || typeof nextResult !== "object") {
+    return;
+  }
+  try {
+    window.localStorage.setItem(
+      runResultStorageKey.value,
+      JSON.stringify({
+        saved_at: new Date().toISOString(),
+        result: nextResult,
+      }),
+    );
+  } catch (_error) {
+    // ignore storage write errors
+  }
+}
+
 function resolveAccessRestriction(experimentDetail, workspace, isAdminMode = false) {
   if (experimentDetail?.interaction_mode === "guided_template") {
     return {
@@ -753,10 +840,19 @@ async function loadExperimentAndCode() {
     }
 
     setEditorValue(nextCode);
+    const restoredRunResult = restoreRunResultSnapshot();
+    if (restoredRunResult) {
+      runResult.value = restoredRunResult;
+      if (!canRun.value) {
+        message.value = `${message.value ? `${message.value}；` : ""}已恢复最近一次运行结果，可点击“查看运行结果”`;
+      }
+    }
     autoSaveStatus.value = loadedStatus;
     if (isWorkspaceLocked.value) {
       autoSaveStatus.value = "submitted";
-      message.value = workspaceMessage.value;
+      message.value = hasRunResult.value
+        ? `${workspaceMessage.value}，可点击“查看运行结果”查看最近一次运行输出`
+        : workspaceMessage.value;
     }
   } catch (error) {
     experiment.value = null;
@@ -836,12 +932,24 @@ async function handleRun() {
   message.value = "";
   try {
     runResult.value = await runCode(currentCode.value, experimentId.value);
+    saveRunResultSnapshot(runResult.value);
     message.value = "运行完成";
   } catch (error) {
     message.value = `运行失败：${error.message}`;
   } finally {
     isRunning.value = false;
   }
+}
+
+function handleRunAction() {
+  if (!canRun.value && hasRunResult.value) {
+    showRunResultDrawer.value = true;
+    message.value = isOverdue.value
+      ? "本实验已截止，当前不可重新运行代码，已为你打开最近一次运行结果。"
+      : "当前运行权限已关闭，已为你打开最近一次运行结果。";
+    return;
+  }
+  handleRun();
 }
 
 async function handleSave() {
@@ -1100,8 +1208,8 @@ onBeforeUnmount(() => {
 }
 
 .panel {
-  background: #fff;
-  border: 1px solid #e5e8f0;
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 18px;
 }
@@ -1119,18 +1227,18 @@ onBeforeUnmount(() => {
 
 .title-wrap p {
   margin: 6px 0 0;
-  color: #6b7280;
+  color: var(--text-subtle);
   font-size: 14px;
 }
 
 .admin-mode-tip {
   margin: 8px 0 0;
-  color: #92400e;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
+  color: var(--warn-strong);
+  background: var(--warn-soft);
+  border: 1px solid var(--warn-border);
   border-radius: 8px;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -1140,7 +1248,7 @@ onBeforeUnmount(() => {
   justify-content: flex-start;
   gap: 10px;
   padding-top: 12px;
-  border-top: 1px solid #eef2ff;
+  border-top: 1px solid var(--border-soft);
 }
 
 .btn {
@@ -1149,28 +1257,28 @@ onBeforeUnmount(() => {
   padding: 10px 14px;
   font-weight: 600;
   cursor: pointer;
-  color: #fff;
+  color: var(--surface-1);
 }
 
 .btn.run {
-  background: #2563eb;
+  background: var(--brand-600);
 }
 
 .btn.save {
-  background: #059669;
+  background: var(--accent-teal-strong);
 }
 
 .btn.submit {
-  background: #7c3aed;
+  background: var(--accent-indigo-strong);
 }
 
 .btn.light {
-  background: #e0e7ff;
-  color: #1d4ed8;
+  background: var(--brand-soft-2);
+  color: var(--brand-700);
 }
 
 .btn.gray {
-  background: #4b5563;
+  background: var(--text-muted);
 }
 
 .btn:disabled {
@@ -1179,40 +1287,40 @@ onBeforeUnmount(() => {
 }
 
 .state-panel {
-  color: #374151;
+  color: var(--text-body);
 }
 
 .state-panel.error {
-  border-color: #fecaca;
-  color: #b91c1c;
-  background: #fef2f2;
+  border-color: var(--danger-border);
+  color: var(--danger-strong);
+  background: var(--danger-soft);
 }
 
 .state-panel.info {
-  border-color: #bfdbfe;
-  color: #1d4ed8;
-  background: #eff6ff;
+  border-color: var(--brand-border);
+  color: var(--brand-700);
+  background: var(--brand-soft);
 }
 
 .state-panel.locked {
-  border-color: #c4b5fd;
-  color: #4c1d95;
-  background: #f5f3ff;
+  border-color: var(--accent-indigo-border);
+  color: var(--accent-indigo-strong);
+  background: var(--accent-indigo-soft);
   font-weight: 600;
 }
 
 .state-panel.review {
-  border-color: #bae6fd;
-  background: #f0f9ff;
-  color: #0c4a6e;
+  border-color: var(--accent-cyan-border);
+  background: var(--accent-cyan-soft);
+  color: var(--accent-cyan-strong);
   display: grid;
   gap: 8px;
 }
 
 .state-panel.restricted {
-  border-color: #fcd34d;
-  background: #fffbeb;
-  color: #92400e;
+  border-color: var(--warn-border);
+  background: var(--warn-soft);
+  color: var(--warn-strong);
 }
 
 .state-panel.restricted h3 {
@@ -1224,9 +1332,9 @@ onBeforeUnmount(() => {
 }
 
 .state-panel.overdue {
-  border-color: #fdba74;
-  color: #9a3412;
-  background: #fff7ed;
+  border-color: var(--warn-border);
+  color: var(--warn-strong);
+  background: var(--warn-soft);
 }
 
 .state-panel.overdue h3 {
@@ -1255,7 +1363,7 @@ onBeforeUnmount(() => {
 
 .review-comment {
   font-size: 14px;
-  color: #0f172a;
+  color: var(--code-bg);
   white-space: pre-wrap;
 }
 
@@ -1264,18 +1372,18 @@ onBeforeUnmount(() => {
   align-items: center;
   border-radius: 999px;
   padding: 3px 10px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
 .review-tag.passed {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--success-soft);
+  color: var(--success-strong);
 }
 
 .review-tag.failed {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--danger-soft);
+  color: var(--danger-strong);
 }
 
 .history-panel {
@@ -1295,13 +1403,13 @@ onBeforeUnmount(() => {
 
 .hint {
   margin: 0;
-  color: #6b7280;
+  color: var(--text-subtle);
   font-size: 14px;
 }
 
 .history-error {
   margin: 0;
-  color: #b91c1c;
+  color: var(--danger-strong);
 }
 
 .history-list {
@@ -1312,9 +1420,9 @@ onBeforeUnmount(() => {
 }
 
 .history-item {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--surface-3);
   text-align: left;
   padding: 10px 12px;
   display: grid;
@@ -1323,8 +1431,8 @@ onBeforeUnmount(() => {
 }
 
 .history-item.active {
-  border-color: #6366f1;
-  background: #eef2ff;
+  border-color: var(--accent-indigo-border);
+  background: var(--accent-indigo-soft);
 }
 
 .history-item.locked {
@@ -1332,8 +1440,8 @@ onBeforeUnmount(() => {
 }
 
 .history-current {
-  color: #4338ca;
-  font-size: 12px;
+  color: var(--accent-indigo-strong);
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -1354,13 +1462,13 @@ onBeforeUnmount(() => {
   align-items: flex-start;
   gap: 8px;
   padding: 12px 14px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .status-title {
   font-size: 14px;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-strong);
 }
 
 .status-line {
@@ -1373,68 +1481,113 @@ onBeforeUnmount(() => {
 .status-item {
   border-radius: 999px;
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  background: #eef2ff;
-  color: #312e81;
+  background: var(--accent-indigo-soft);
+  color: var(--accent-indigo-strong);
 }
 
 .status-hint {
   margin: 0;
-  color: #7c2d12;
-  background: #ffedd5;
-  border: 1px solid #fdba74;
+  color: var(--warn-strong);
+  background: var(--warn-soft);
+  border: 1px solid var(--warn-border);
   border-radius: 8px;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 
 .status-hint-workspace {
-  color: #1e3a8a;
-  background: #dbeafe;
-  border-color: #93c5fd;
+  color: var(--brand-800);
+  background: var(--brand-soft-2);
+  border-color: var(--brand-border-strong);
 }
 
 .draft-tag {
   border-radius: 999px;
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
 .draft-tag.clean {
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--neutral-btn);
+  color: var(--text-body);
 }
 
 .draft-tag.dirty {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: var(--danger-soft);
+  color: var(--danger-strong);
 }
 
 .draft-tag.saving {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--brand-soft-2);
+  color: var(--brand-700);
 }
 
 .draft-tag.saved {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--success-soft);
+  color: var(--success-strong);
 }
 
 .draft-tag.submitted {
-  background: #ede9fe;
-  color: #5b21b6;
+  background: var(--accent-indigo-soft);
+  color: var(--accent-indigo-strong);
 }
 
 .draft-tag.error {
-  background: #fef2f2;
-  color: #991b1b;
+  background: var(--danger-soft);
+  color: var(--danger-strong);
 }
 
 .editor-shell {
   position: relative;
+}
+
+.editor-mini-actions {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 6;
+  display: flex;
+  gap: 8px;
+}
+
+.mini-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  height: 32px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--surface-1);
+  color: var(--text-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+.mini-action svg {
+  width: 14px;
+  height: 14px;
+}
+
+.mini-run {
+  border-color: var(--brand-border-strong);
+  color: var(--brand-700);
+}
+
+.mini-save {
+  border-color: var(--success-border);
+  color: var(--success-strong);
+}
+
+.mini-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .editor-instance {
@@ -1444,12 +1597,27 @@ onBeforeUnmount(() => {
 .editor-overlay {
   position: absolute;
   inset: 0;
+  z-index: 12;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(1px);
-  color: #1f2937;
+  background: var(--overlay-panel);
+  color: var(--text-strong);
   font-weight: 600;
+  pointer-events: all;
+}
+
+@media (max-width: 680px) {
+  .editor-mini-actions {
+    top: 8px;
+    right: 8px;
+    gap: 6px;
+  }
+
+  .mini-action {
+    height: 30px;
+    padding: 0 8px;
+    font-size: 13px;
+  }
 }
 </style>

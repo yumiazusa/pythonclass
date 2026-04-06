@@ -167,11 +167,11 @@ async function submitEditDialog() {
 
 .profile-card {
   width: min(640px, 92vw);
-  background: #fff;
-  border: 1px solid #e5e8f0;
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
   border-radius: 14px;
   padding: 24px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-soft);
 }
 
 .profile-card h2 {
@@ -180,16 +180,16 @@ async function submitEditDialog() {
 
 .subtitle {
   margin: 8px 0 18px;
-  color: #6b7280;
+  color: var(--text-subtle);
   font-size: 14px;
 }
 
 .state-text {
-  color: #374151;
+  color: var(--text-body);
 }
 
 .state-text.error {
-  color: #b91c1c;
+  color: var(--danger-strong);
 }
 
 .info-grid {
@@ -199,7 +199,7 @@ async function submitEditDialog() {
 }
 
 .info-item {
-  border: 1px solid #e5e8f0;
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
   padding: 10px 12px;
   display: grid;
@@ -207,12 +207,12 @@ async function submitEditDialog() {
 }
 
 .info-item span {
-  color: #6b7280;
-  font-size: 12px;
+  color: var(--text-subtle);
+  font-size: 14px;
 }
 
 .info-item strong {
-  color: #111827;
+  color: var(--text-strong);
   font-size: 14px;
 }
 
@@ -227,42 +227,44 @@ async function submitEditDialog() {
   text-decoration: none;
   border-radius: 8px;
   padding: 9px 12px;
-  color: #fff;
+  color: var(--surface-1);
   font-weight: 600;
 }
 
 .btn.change {
-  background: #2563eb;
+  background: var(--brand-600);
 }
 
 .btn.edit {
   border: 0;
-  background: #0891b2;
+  background: var(--accent-cyan-strong);
 }
 
 .btn.home {
-  background: #4b5563;
+  background: var(--text-muted);
 }
 
 .dialog-mask {
   position: fixed;
   inset: 0;
-  background: rgba(17, 24, 39, 0.45);
+  background: var(--overlay-soft);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 40;
+  z-index: var(--z-dialog);
   padding: 16px;
 }
 
 .dialog-card {
   width: min(420px, 92vw);
-  background: #fff;
-  border: 1px solid #e5e8f0;
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 16px;
   display: grid;
   gap: 10px;
+  max-height: min(86vh, 620px);
+  overflow: auto;
 }
 
 .dialog-card h3 {
@@ -275,20 +277,20 @@ async function submitEditDialog() {
 }
 
 .field span {
-  color: #6b7280;
-  font-size: 13px;
+  color: var(--text-subtle);
+  font-size: 14px;
 }
 
 .field input {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 8px 10px;
 }
 
 .dialog-error {
   margin: 0;
-  color: #b91c1c;
-  font-size: 13px;
+  color: var(--danger-strong);
+  font-size: 14px;
 }
 
 .dialog-actions {
@@ -299,19 +301,29 @@ async function submitEditDialog() {
 
 .btn.cancel {
   border: 0;
-  background: #e5e7eb;
-  color: #111827;
+  background: var(--neutral-btn);
+  color: var(--text-strong);
 }
 
 .btn.submit {
   border: 0;
-  background: #2563eb;
-  color: #fff;
+  background: var(--brand-600);
+  color: var(--surface-1);
 }
 
 @media (max-width: 720px) {
   .info-grid {
     grid-template-columns: 1fr;
+  }
+
+  .dialog-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .dialog-actions .btn {
+    width: 100%;
+    text-align: center;
   }
 }
 </style>

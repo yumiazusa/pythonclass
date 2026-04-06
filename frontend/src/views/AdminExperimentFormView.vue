@@ -337,8 +337,8 @@ onMounted(() => {
 }
 
 .panel {
-  background: #fff;
-  border: 1px solid #e5e8f0;
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 16px;
 }
@@ -349,7 +349,7 @@ onMounted(() => {
 
 .head-panel p {
   margin: 8px 0 0;
-  color: #4b5563;
+  color: var(--text-muted);
 }
 
 .form-grid {
@@ -365,14 +365,14 @@ onMounted(() => {
 }
 
 .field span {
-  font-size: 13px;
-  color: #4b5563;
+  font-size: 14px;
+  color: var(--text-muted);
 }
 
 .field input,
 .field select,
 .field textarea {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 8px 10px;
   font-family: inherit;
@@ -387,12 +387,12 @@ onMounted(() => {
 
 .mode-placeholder {
   margin-top: 10px;
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed var(--border-strong);
   border-radius: 8px;
   padding: 12px;
-  background: #f8fafc;
-  color: #475569;
-  font-size: 13px;
+  background: var(--surface-3);
+  color: var(--text-muted);
+  font-size: 14px;
 }
 
 .guided-grid {
@@ -416,18 +416,18 @@ onMounted(() => {
 }
 
 .btn.primary {
-  background: #2563eb;
-  color: #fff;
+  background: var(--brand-600);
+  color: var(--surface-1);
 }
 
 .btn.plain {
-  background: #e5e7eb;
-  color: #111827;
+  background: var(--neutral-btn);
+  color: var(--text-strong);
 }
 
 .btn.test-link {
-  background: #0ea5e9;
-  color: #fff;
+  background: var(--accent-cyan-strong);
+  color: var(--surface-1);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -439,15 +439,15 @@ onMounted(() => {
 }
 
 .error {
-  border-color: #fecaca;
-  background: #fef2f2;
-  color: #b91c1c;
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
+  color: var(--danger-strong);
 }
 
 .success {
-  border-color: #bbf7d0;
-  background: #f0fdf4;
-  color: #166534;
+  border-color: var(--success-border);
+  background: var(--success-soft);
+  color: var(--success-strong);
 }
 
 @media (max-width: 960px) {

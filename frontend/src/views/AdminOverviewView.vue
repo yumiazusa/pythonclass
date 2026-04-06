@@ -86,8 +86,8 @@ onMounted(async () => {
 }
 
 .panel {
-  background: #fff;
-  border: 1px solid #e5e8f0;
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 18px;
 }
@@ -98,13 +98,13 @@ onMounted(async () => {
 
 .head-panel p {
   margin: 8px 0 0;
-  color: #4b5563;
+  color: var(--text-muted);
 }
 
 .error {
-  border-color: #fecaca;
-  background: #fef2f2;
-  color: #b91c1c;
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
+  color: var(--danger-strong);
 }
 
 .cards-grid {
@@ -114,7 +114,7 @@ onMounted(async () => {
 }
 
 .stat-card {
-  border: 1px solid #e5e8f0;
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
   padding: 12px;
   display: grid;
@@ -122,29 +122,29 @@ onMounted(async () => {
 }
 
 .stat-card span {
-  color: #6b7280;
-  font-size: 13px;
+  color: var(--text-subtle);
+  font-size: 14px;
 }
 
 .stat-card strong {
-  color: #111827;
+  color: var(--text-strong);
   font-size: 26px;
   line-height: 1;
 }
 
 .stat-card.good {
-  border-color: #bbf7d0;
-  background: #f0fdf4;
+  border-color: var(--success-border);
+  background: var(--success-soft);
 }
 
 .stat-card.warn {
-  border-color: #fed7aa;
-  background: #fff7ed;
+  border-color: var(--warn-border);
+  background: var(--warn-soft);
 }
 
 .stat-card.soft {
-  border-color: #dbeafe;
-  background: #eff6ff;
+  border-color: var(--brand-soft-2);
+  background: var(--brand-soft);
 }
 
 @media (max-width: 920px) {

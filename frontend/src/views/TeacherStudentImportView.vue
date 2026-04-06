@@ -171,8 +171,8 @@ onMounted(async () => {
 }
 
 .panel {
-  background: #fff;
-  border: 1px solid #e5e8f0;
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 18px;
 }
@@ -183,25 +183,25 @@ onMounted(async () => {
 
 .header-panel p {
   margin: 8px 0 12px;
-  color: #6b7280;
+  color: var(--text-subtle);
 }
 
 .back-link {
-  color: #2563eb;
+  color: var(--brand-600);
   text-decoration: none;
   font-weight: 600;
 }
 
 .error {
-  border-color: #fecaca;
-  background: #fef2f2;
-  color: #b91c1c;
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
+  color: var(--danger-strong);
 }
 
 .success {
-  border-color: #bbf7d0;
-  background: #f0fdf4;
-  color: #166534;
+  border-color: var(--success-border);
+  background: var(--success-soft);
+  color: var(--success-strong);
 }
 
 .uploader {
@@ -213,7 +213,7 @@ onMounted(async () => {
 
 .upload-rules {
   margin: 8px 0 12px;
-  color: #4b5563;
+  color: var(--text-muted);
 }
 
 .btn.upload {
@@ -222,8 +222,8 @@ onMounted(async () => {
   justify-content: center;
   border: 0;
   border-radius: 8px;
-  background: #111827;
-  color: #fff;
+  background: var(--text-strong);
+  color: var(--surface-1);
   padding: 8px 12px;
   font-weight: 600;
   cursor: pointer;
@@ -235,8 +235,8 @@ onMounted(async () => {
   justify-content: center;
   border: 0;
   border-radius: 8px;
-  background: #2563eb;
-  color: #fff;
+  background: var(--brand-600);
+  color: var(--surface-1);
   padding: 8px 12px;
   font-weight: 600;
   cursor: pointer;
@@ -254,7 +254,7 @@ onMounted(async () => {
 
 .hint {
   margin-top: 12px;
-  color: #4b5563;
+  color: var(--text-muted);
 }
 
 .summary-grid {
@@ -278,7 +278,7 @@ onMounted(async () => {
 }
 
 .failed-wrap li {
-  color: #374151;
+  color: var(--text-body);
   margin-bottom: 6px;
 }
 </style>

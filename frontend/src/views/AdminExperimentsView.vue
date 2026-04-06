@@ -370,10 +370,10 @@ onMounted(() => {
 }
 
 .panel {
-  background: #fff;
-  border: 1px solid #e5e8f0;
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
-  padding: 16px;
+  padding: 18px;
 }
 
 .head-row {
@@ -390,13 +390,13 @@ onMounted(() => {
 
 .head-panel p {
   margin: 8px 0 0;
-  color: #4b5563;
+  color: var(--text-muted);
 }
 
 .filters-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .field {
@@ -405,13 +405,13 @@ onMounted(() => {
 }
 
 .field span {
-  font-size: 13px;
-  color: #4b5563;
+  font-size: 14px;
+  color: var(--text-muted);
 }
 
 .field input,
 .field select {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 8px 10px;
 }
@@ -423,8 +423,8 @@ onMounted(() => {
 }
 
 .table-meta {
-  color: #4b5563;
-  font-size: 13px;
+  color: var(--text-muted);
+  font-size: 14px;
 }
 
 .table-wrap {
@@ -439,21 +439,22 @@ table {
 
 th,
 td {
-  border-bottom: 1px solid #e5e8f0;
-  padding: 10px 8px;
+  border-bottom: 1px solid var(--border-soft);
+  padding: 11px 8px;
   text-align: left;
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.45;
   white-space: normal;
   word-break: break-word;
 }
 
 .col-title {
-  width: 22%;
-  min-width: 180px;
+  width: 18%;
+  min-width: 160px;
 }
 
 .title-cell {
-  max-width: 260px;
+  max-width: 250px;
 }
 
 .title-text {
@@ -468,9 +469,9 @@ td {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
+  padding: 4px 9px;
+  border-radius: 10px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   border: 1px solid transparent;
@@ -478,41 +479,42 @@ td {
 
 .status-pill::before {
   content: "";
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: currentColor;
   opacity: 0.9;
 }
 
 .status-pill.enabled {
-  background: #ecfdf3;
-  border-color: #bbf7d0;
-  color: #166534;
+  background: var(--success-soft);
+  border-color: var(--success-border);
+  color: var(--success-strong);
 }
 
 .status-pill.disabled {
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #b91c1c;
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+  color: var(--danger-strong);
 }
 
 .status-pill.published {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1d4ed8;
+  background: var(--brand-soft);
+  border-color: var(--brand-border);
+  color: var(--brand-700);
 }
 
 .status-pill.draft {
-  background: #f9fafb;
-  border-color: #e5e7eb;
-  color: #4b5563;
+  background: var(--surface-2);
+  border-color: var(--border-soft);
+  color: var(--text-muted);
 }
 
 .row-actions {
   display: flex;
   gap: 8px;
   flex-wrap: nowrap;
+  align-items: center;
   white-space: nowrap;
 }
 
@@ -526,38 +528,38 @@ td {
 }
 
 .btn.primary {
-  background: #2563eb;
-  color: #fff;
+  background: var(--brand-600);
+  color: var(--surface-1);
 }
 
 .btn.plain {
-  background: #e5e7eb;
-  color: #111827;
+  background: var(--neutral-btn);
+  color: var(--text-strong);
 }
 
 .btn.success {
-  background: #16a34a;
-  color: #fff;
+  background: var(--success-strong);
+  color: var(--surface-1);
 }
 
 .btn.info {
-  background: #0ea5e9;
-  color: #fff;
+  background: var(--accent-cyan-strong);
+  color: var(--surface-1);
 }
 
 .btn.copy {
-  background: #2563eb;
-  color: #fff;
+  background: var(--brand-600);
+  color: var(--surface-1);
 }
 
 .btn.danger {
-  background: #dc2626;
-  color: #fff;
+  background: var(--danger-strong);
+  color: var(--surface-1);
 }
 
 .btn.mini {
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1;
 }
 
@@ -568,7 +570,7 @@ td {
 
 .hint {
   margin: 10px 0 0;
-  color: #6b7280;
+  color: var(--text-subtle);
 }
 
 .pagination {
@@ -587,7 +589,7 @@ td {
 }
 
 .page-size select {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 6px 8px;
 }
@@ -599,15 +601,15 @@ td {
 }
 
 .error {
-  border-color: #fecaca;
-  background: #fef2f2;
-  color: #b91c1c;
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
+  color: var(--danger-strong);
 }
 
 .success {
-  border-color: #bbf7d0;
-  background: #f0fdf4;
-  color: #166534;
+  border-color: var(--success-border);
+  background: var(--success-soft);
+  color: var(--success-strong);
 }
 
 @media (max-width: 960px) {

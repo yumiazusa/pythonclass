@@ -62,8 +62,8 @@ onMounted(() => {
 }
 
 .card {
-  background: #fff;
-  border: 1px solid #e5e8f0;
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 20px;
 }
@@ -74,13 +74,13 @@ onMounted(() => {
 
 .desc {
   margin: 10px 0 0;
-  color: #374151;
+  color: var(--text-body);
 }
 
 .meta {
   margin: 10px 0 0;
-  color: #6b7280;
-  font-size: 13px;
+  color: var(--text-subtle);
+  font-size: 14px;
 }
 
 .actions {
@@ -99,12 +99,12 @@ onMounted(() => {
 }
 
 .btn.list {
-  background: #e5e7eb;
-  color: #111827;
+  background: var(--neutral-btn);
+  color: var(--text-strong);
 }
 
 .btn.docs {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--brand-soft-2);
+  color: var(--brand-700);
 }
 </style>
