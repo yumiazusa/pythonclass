@@ -2400,7 +2400,8 @@ tbody tr:hover {
   letter-spacing: 0.01em;
   font-family: var(--font-mono);
   tab-size: 2;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
   scrollbar-gutter: stable;
 }
 
@@ -2441,13 +2442,14 @@ tbody tr:hover {
 
 @media (min-width: 961px) {
   .history-drawer {
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .drawer-body {
-    min-height: 0;
-    height: 100%;
-    overflow: hidden;
+    min-height: auto;
+    height: auto;
+    overflow: visible;
   }
 
   .history-column,
@@ -2457,19 +2459,19 @@ tbody tr:hover {
 
   .history-column {
     grid-template-rows: auto minmax(0, 1fr);
-    overflow: hidden;
+    overflow: visible;
   }
 
   .history-list {
-    height: 100%;
-    max-height: none;
+    height: auto;
+    max-height: min(72dvh, 760px);
   }
 
   .detail-scroll {
-    min-height: 0;
-    max-height: 100%;
-    overflow: auto;
-    padding-right: 6px;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+    padding-right: 4px;
   }
 }
 
