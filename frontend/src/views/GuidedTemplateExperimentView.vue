@@ -234,6 +234,7 @@ import {
   submitSubmission,
 } from "../api/submission";
 import { formatApiDateTime, parseApiDateTime } from "../utils/datetime";
+import { buildRunResultFromSubmission, hasRunnableResult, normalizeRunResult } from "../utils/run-result";
 
 const route = useRoute();
 const router = useRouter();
@@ -792,7 +793,7 @@ function restoreRunResultSnapshot() {
     if (!snapshot || typeof snapshot !== "object") {
       return null;
     }
-    return snapshot;
+    return normalizeRunResult(snapshot);
   } catch (_error) {
     return null;
   }
@@ -950,6 +951,11 @@ async function refreshLatestAndHistory(options = {}) {
     if (updateLoadedFromLatest) {
       updateLoadedSubmissionMeta(latest, latest?.status ? "unknown" : "draft");
     }
+    const submissionRunResult = buildRunResultFromSubmission(latest);
+    if (submissionRunResult && !hasRunnableResult(runResult.value)) {
+      runResult.value = submissionRunResult;
+      saveRunResultSnapshot(submissionRunResult);
+    }
   } catch (error) {
     if (error.message.includes("暂无提交记录")) {
       latestSavedVersion.value = null;
@@ -1054,8 +1060,10 @@ async function loadExperimentAndCode() {
     }
 
     let nextCode = "";
+    let latestSubmission = null;
     try {
       const latest = await getLatestSubmission(experimentId.value);
+      latestSubmission = latest;
       if (latest?.code) {
         nextCode = latest.code;
         updateLatestSubmissionMeta(latest);
@@ -1076,9 +1084,15 @@ async function loadExperimentAndCode() {
     const restoredRunResult = restoreRunResultSnapshot();
     if (restoredRunResult) {
       runResult.value = restoredRunResult;
-      if (!canRun.value) {
-        message.value = `${message.value ? `${message.value}；` : ""}已恢复最近一次运行结果，可点击“查看运行结果”`;
+    } else if (latestSubmission) {
+      const submissionRunResult = buildRunResultFromSubmission(latestSubmission);
+      if (submissionRunResult) {
+        runResult.value = submissionRunResult;
+        saveRunResultSnapshot(submissionRunResult);
       }
+    }
+    if (hasRunnableResult(runResult.value) && !canRun.value) {
+      message.value = `${message.value ? `${message.value}；` : ""}已恢复最近一次运行结果，可点击“查看运行结果”`;
     }
     if (isWorkspaceLocked.value && hasRunResult.value) {
       message.value = `${workspaceMessage.value}，可点击“查看运行结果”查看最近一次运行输出`;
@@ -1270,6 +1284,11 @@ async function loadHistoryDetail(item) {
     const detail = await getSubmissionDetail(item.id);
     if (typeof detail?.code === "string") {
       setEditorValue(detail.code, { markAsSaved: false });
+      const submissionRunResult = buildRunResultFromSubmission(detail);
+      if (submissionRunResult) {
+        runResult.value = submissionRunResult;
+        saveRunResultSnapshot(submissionRunResult);
+      }
       currentLoadedVersion.value = parseVersion(item?.version);
       currentSubmissionStatus.value = "history";
       message.value = `已加载历史版本 v${item.version}，请保存或提交`;
