@@ -2,10 +2,11 @@
   <section class="teacher-page">
     <article class="panel header-panel">
       <h2>学生账号管理</h2>
-      <p>支持筛选、启停用、重置密码与导出账号清单。</p>
-      <div class="head-links">
-        <RouterLink class="back-link" to="/teacher/experiments">返回教师看板</RouterLink>
-        <RouterLink class="back-link" to="/teacher/student-import">去导入学生名单</RouterLink>
+      <p class="header-desc">支持筛选、启停用、重置密码与导出账号清单。</p>
+      <p class="header-hint">建议先导入学生名单，再进行筛选和批量操作。</p>
+      <div class="toolbar">
+        <RouterLink class="btn header-action back-nav" to="/teacher/experiments">返回教师看板</RouterLink>
+        <RouterLink class="btn header-action import-nav" to="/teacher/student-import">去导入学生名单</RouterLink>
       </div>
     </article>
 
@@ -85,17 +86,44 @@
         <div class="batch-ops">
           <span class="batch-meta">已选 {{ selectedCount }} 人</span>
           <div class="batch-actions">
-            <button type="button" class="btn gray" :disabled="isLoading || students.length === 0" @click="toggleSelectCurrentPage">
+            <button
+              type="button"
+              class="btn gray btn-batch-select-page"
+              :disabled="isLoading || students.length === 0"
+              @click="toggleSelectCurrentPage"
+            >
               {{ isAllCurrentPageSelected ? "取消全选当前页" : "全选当前页" }}
             </button>
-            <button type="button" class="btn gray" :disabled="selectedCount === 0 || isLoading" @click="clearSelection">清空选择</button>
-            <button type="button" class="btn manage" :disabled="selectedCount === 0 || isLoading || isActioning" @click="handleBatchEnable">
+            <button
+              type="button"
+              class="btn gray btn-batch-clear"
+              :disabled="selectedCount === 0 || isLoading"
+              @click="clearSelection"
+            >
+              清空选择
+            </button>
+            <button
+              type="button"
+              class="btn manage btn-batch-enable"
+              :disabled="selectedCount === 0 || isLoading || isActioning"
+              @click="handleBatchEnable"
+            >
               {{ isActioning ? "处理中..." : "批量启用" }}
             </button>
-            <button type="button" class="btn disable" :disabled="selectedCount === 0 || isLoading || isActioning" @click="handleBatchDisable">
+            <button
+              type="button"
+              class="btn disable btn-batch-disable"
+              :disabled="selectedCount === 0 || isLoading || isActioning"
+              @click="handleBatchDisable"
+            >
               {{ isActioning ? "处理中..." : "批量停用" }}
             </button>
-            <button type="button" class="btn reset" :disabled="selectedCount === 0 || isLoading || isActioning" @click="handleBatchResetPassword">
+            <button
+              type="button"
+              class="btn reset btn-batch-reset"
+              :disabled="selectedCount === 0 || isLoading || isActioning"
+              @click="handleBatchResetPassword"
+            >
               {{ isActioning ? "处理中..." : "批量重置密码" }}
             </button>
           </div>
@@ -104,54 +132,95 @@
         <p v-if="isLoading" class="hint">正在加载学生账号...</p>
         <p v-else-if="errorMessage" class="error-text">{{ errorMessage }}</p>
         <p v-else-if="students.length === 0" class="hint">当前筛选条件下无学生数据</p>
-        <div v-else class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>选择</th>
-                <th>姓名</th>
-                <th>学号</th>
-                <th>班级</th>
-                <th>用户名</th>
-                <th>账号状态</th>
-                <th>创建时间</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in students" :key="item.user_id">
-                <td>
+        <div v-else>
+          <div class="table-wrap desktop-only">
+            <table>
+              <thead>
+                <tr>
+                  <th>选择</th>
+                  <th>姓名</th>
+                  <th>学号</th>
+                  <th>班级</th>
+                  <th>用户名</th>
+                  <th>账号状态</th>
+                  <th>创建时间</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in students" :key="item.user_id">
+                  <td>
+                    <input
+                      type="checkbox"
+                      :checked="selectedUserIds.includes(item.user_id)"
+                      :disabled="isLoading || isActioning"
+                      @change="toggleUserSelection(item.user_id, $event.target.checked)"
+                    />
+                  </td>
+                  <td>{{ item.full_name || "-" }}</td>
+                  <td>{{ item.student_no || "-" }}</td>
+                  <td>{{ item.class_name || "-" }}</td>
+                  <td>{{ item.username }}</td>
+                  <td>
+                    <span :class="['status-tag', item.is_enabled ? 'enabled' : 'disabled']">
+                      {{ item.is_enabled ? "启用" : "停用" }}
+                    </span>
+                  </td>
+                  <td>{{ formatTime(item.created_at) }}</td>
+                  <td class="actions">
+                    <button type="button" class="btn manage" :disabled="item.is_enabled || isActioning" @click="handleSingleEnable(item)">
+                      启用
+                    </button>
+                    <button type="button" class="btn disable" :disabled="!item.is_enabled || isActioning" @click="handleSingleDisable(item)">
+                      停用
+                    </button>
+                    <button type="button" class="btn reset" :disabled="isActioning" @click="handleSingleResetPassword(item)">
+                      重置密码
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="mobile-only student-mobile-list">
+            <article v-for="item in students" :key="`student-mobile-${item.user_id}`" class="student-mobile-card">
+              <div class="student-mobile-head">
+                <label class="student-mobile-check">
                   <input
                     type="checkbox"
                     :checked="selectedUserIds.includes(item.user_id)"
                     :disabled="isLoading || isActioning"
                     @change="toggleUserSelection(item.user_id, $event.target.checked)"
                   />
-                </td>
-                <td>{{ item.full_name || "-" }}</td>
-                <td>{{ item.student_no || "-" }}</td>
-                <td>{{ item.class_name || "-" }}</td>
-                <td>{{ item.username }}</td>
-                <td>
-                  <span :class="['status-tag', item.is_enabled ? 'enabled' : 'disabled']">
-                    {{ item.is_enabled ? "启用" : "停用" }}
-                  </span>
-                </td>
-                <td>{{ formatTime(item.created_at) }}</td>
-                <td class="actions">
-                  <button type="button" class="btn manage" :disabled="item.is_enabled || isActioning" @click="handleSingleEnable(item)">
-                    启用
-                  </button>
-                  <button type="button" class="btn disable" :disabled="!item.is_enabled || isActioning" @click="handleSingleDisable(item)">
-                    停用
-                  </button>
-                  <button type="button" class="btn reset" :disabled="isActioning" @click="handleSingleResetPassword(item)">
-                    重置密码
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </label>
+                <div class="student-mobile-identity">
+                  <h4>{{ item.full_name || item.username }}</h4>
+                  <p>{{ item.username }}（#{{ item.user_id }}）</p>
+                </div>
+                <span :class="['status-tag', item.is_enabled ? 'enabled' : 'disabled']">
+                  {{ item.is_enabled ? "启用" : "停用" }}
+                </span>
+              </div>
+
+              <div class="student-mobile-meta">
+                <span>学号：{{ item.student_no || "-" }}</span>
+                <span>班级：{{ item.class_name || "-" }}</span>
+              </div>
+              <p class="student-mobile-time">创建：{{ formatTime(item.created_at) }}</p>
+
+              <div class="student-mobile-actions">
+                <button type="button" class="btn manage" :disabled="item.is_enabled || isActioning" @click="handleSingleEnable(item)">
+                  启用
+                </button>
+                <button type="button" class="btn disable" :disabled="!item.is_enabled || isActioning" @click="handleSingleDisable(item)">
+                  停用
+                </button>
+                <button type="button" class="btn reset" :disabled="isActioning" @click="handleSingleResetPassword(item)">
+                  重置密码
+                </button>
+              </div>
+            </article>
+          </div>
         </div>
 
         <div class="pagination">
@@ -575,23 +644,52 @@ onMounted(async () => {
 
 .header-panel h2 {
   margin: 0;
+  font-size: clamp(30px, 2.45vw, 43px);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
 }
 
-.header-panel p {
-  margin: 8px 0 12px;
+.header-desc {
+  margin: 8px 0 0;
   color: var(--text-subtle);
+  line-height: 1.45;
 }
 
-.head-links {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+.header-hint {
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  line-height: 1.45;
 }
 
-.back-link {
-  color: var(--brand-600);
+.toolbar {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.header-panel .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  border-radius: 10px;
+  padding: 9px 12px;
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.btn.back-nav {
+  background: var(--text-strong);
+  color: var(--surface-1);
+}
+
+.btn.import-nav {
+  background: var(--accent-teal-strong);
+  color: var(--surface-1);
 }
 
 .error {
@@ -658,6 +756,14 @@ onMounted(async () => {
   font-size: 14px;
 }
 
+.desktop-only {
+  display: block !important;
+}
+
+.mobile-only {
+  display: none !important;
+}
+
 .batch-ops {
   margin-top: 12px;
   display: flex;
@@ -701,12 +807,33 @@ th {
   background: var(--surface-3);
 }
 
+th:nth-child(7),
+td:nth-child(7) {
+  width: 190px;
+  white-space: nowrap;
+}
+
+th:nth-child(8),
+td:nth-child(8) {
+  width: 248px;
+  white-space: nowrap;
+}
+
+th:nth-child(8),
+td:nth-child(8) {
+  padding-right: 0;
+}
+
 .status-tag {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .status-tag.enabled {
@@ -721,13 +848,24 @@ th {
 
 .actions {
   display: flex;
+  justify-content: flex-start;
   gap: 8px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.actions .btn {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 13px;
 }
 
 .btn {
   border: 0;
   border-radius: 8px;
   padding: 8px 12px;
+  min-height: 36px;
+  line-height: 1.2;
   color: var(--surface-1);
   cursor: pointer;
   font-weight: 600;
@@ -798,9 +936,259 @@ th {
   gap: 10px;
 }
 
+/* Mobile card list (same interaction rhythm as teacher dashboard cards) */
+.student-mobile-list {
+  margin-top: 12px;
+  gap: 10px;
+}
+
+.student-mobile-card {
+  border: 1px solid color-mix(in srgb, var(--border-soft) 72%, var(--brand-border) 28%);
+  border-radius: 12px;
+  padding: 11px;
+  background: color-mix(in srgb, var(--surface-1) 94%, var(--brand-soft) 6%);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--brand-border) 10%, transparent);
+  min-width: 0;
+}
+
+.student-mobile-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.student-mobile-check {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding-top: 0;
+}
+
+.student-mobile-check input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin: 0;
+}
+
+.student-mobile-identity {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.student-mobile-identity h4 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 15px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.student-mobile-identity p {
+  margin: 0;
+  color: var(--text-subtle);
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.student-mobile-meta {
+  margin-top: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.student-mobile-meta span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 74%, var(--brand-border) 26%);
+  background: color-mix(in srgb, var(--surface-2) 86%, var(--brand-soft) 14%);
+  color: color-mix(in srgb, var(--text-body) 88%, var(--brand-700) 12%);
+  padding: 3px 9px;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.student-mobile-time {
+  margin: 8px 0 0;
+  color: var(--text-subtle);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.student-mobile-actions {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.student-mobile-actions .btn {
+  width: 100%;
+  min-height: 30px;
+  padding: 5px 6px;
+  font-size: 12px;
+  line-height: 1.15;
+  font-weight: 600;
+}
+
+@media (max-width: 1180px) {
+  .filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1024px) {
+  .header-panel h2 {
+    font-size: clamp(27px, 4.6vw, 37px);
+  }
+
+  .table-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .batch-ops {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .batch-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .batch-actions .btn {
+    width: 100%;
+    min-height: 34px;
+    padding: 6px 8px;
+    font-size: 12px;
+    line-height: 1.2;
+    border-radius: 9px;
+  }
+
+  .btn-batch-select-page {
+    grid-row: 1;
+    grid-column: 1 / span 2;
+  }
+
+  .btn-batch-clear {
+    grid-row: 1;
+    grid-column: 3 / span 2;
+  }
+
+  .btn-batch-reset {
+    grid-row: 1;
+    grid-column: 5 / span 2;
+  }
+
+  .btn-batch-enable {
+    grid-row: 2;
+    grid-column: 1 / span 3;
+  }
+
+  .btn-batch-disable {
+    grid-row: 2;
+    grid-column: 4 / span 3;
+  }
+}
+
 @media (max-width: 960px) {
+  .desktop-only {
+    display: none !important;
+  }
+
+  .mobile-only {
+    display: grid !important;
+  }
+
+  .teacher-page {
+    gap: 12px;
+  }
+
+  .panel {
+    padding: 14px;
+  }
+
+  .header-panel h2 {
+    font-size: clamp(24px, 6vw, 32px);
+  }
+
   .filter-grid {
     grid-template-columns: 1fr;
+  }
+
+  .filter-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-actions .btn {
+    width: 100%;
+  }
+
+  .filter-actions .btn.export {
+    grid-column: 1 / -1;
+  }
+
+  .pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .page-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .student-mobile-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .batch-actions {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .page-size,
+  .page-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .student-mobile-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .header-desc,
+  .header-hint {
+    font-size: 13px;
+  }
+
+  .batch-actions .btn {
+    min-height: 32px;
+    padding: 5px 6px;
+    font-size: 11px;
   }
 }
 </style>
