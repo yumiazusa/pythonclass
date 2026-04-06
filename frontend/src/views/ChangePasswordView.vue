@@ -22,9 +22,12 @@
             placeholder="请再次输入新密码"
           />
         </label>
-        <button class="btn-submit" type="submit" :disabled="isSubmitting">
-          {{ isSubmitting ? "提交中..." : "确认修改" }}
-        </button>
+        <div class="action-row">
+          <button class="btn-back" type="button" :disabled="isSubmitting" @click="goProfile">返回个人中心</button>
+          <button class="btn-submit" type="submit" :disabled="isSubmitting">
+            {{ isSubmitting ? "提交中..." : "确认修改" }}
+          </button>
+        </div>
       </form>
 
       <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
@@ -93,6 +96,10 @@ async function handleSubmit() {
     isSubmitting.value = false;
   }
 }
+
+function goProfile() {
+  router.push("/profile");
+}
 </script>
 
 <style scoped>
@@ -104,11 +111,11 @@ async function handleSubmit() {
 
 .change-card {
   width: min(460px, 92vw);
-  background: #fff;
-  border: 1px solid #e5e8f0;
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
   border-radius: 14px;
   padding: 24px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-soft);
 }
 
 .change-card h2 {
@@ -117,7 +124,7 @@ async function handleSubmit() {
 
 .subtitle {
   margin: 8px 0 18px;
-  color: #6b7280;
+  color: var(--text-subtle);
   font-size: 14px;
 }
 
@@ -132,12 +139,12 @@ async function handleSubmit() {
 }
 
 .field span {
-  font-size: 13px;
-  color: #374151;
+  font-size: 14px;
+  color: var(--text-body);
 }
 
 .field input {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 10px 12px;
   font-size: 14px;
@@ -146,8 +153,24 @@ async function handleSubmit() {
 .btn-submit {
   border: 0;
   border-radius: 8px;
-  background: #2563eb;
-  color: #fff;
+  background: var(--brand-600);
+  color: var(--surface-1);
+  padding: 10px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btn-back {
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-body);
   padding: 10px 12px;
   font-weight: 600;
   cursor: pointer;
@@ -158,12 +181,17 @@ async function handleSubmit() {
   cursor: not-allowed;
 }
 
+.btn-back:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .error-text {
   margin: 12px 0 0;
   border-radius: 8px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-border);
+  color: var(--danger-strong);
   padding: 10px 12px;
   font-size: 14px;
 }
@@ -171,10 +199,16 @@ async function handleSubmit() {
 .success-text {
   margin: 12px 0 0;
   border-radius: 8px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #166534;
+  background: var(--success-soft);
+  border: 1px solid var(--success-border);
+  color: var(--success-strong);
   padding: 10px 12px;
   font-size: 14px;
+}
+
+@media (max-width: 560px) {
+  .action-row {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

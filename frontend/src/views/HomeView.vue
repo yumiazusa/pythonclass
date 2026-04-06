@@ -8,8 +8,8 @@
 
 <style scoped>
 .card {
-  background: #fff;
-  border: 1px solid #e5e8f0;
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 20px;
 }

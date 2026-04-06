@@ -230,12 +230,26 @@
                 <td>{{ item.class_name || "-" }}</td>
                 <td>v{{ item.latest_version }}</td>
                 <td>
-                  <span :class="['status-tag', item.latest_status]">{{ item.latest_status }}</span>
+                  <span
+                    :class="['status-tag', item.latest_status, 'compact']"
+                    :title="formatLatestStatusText(item.latest_status)"
+                    :aria-label="`提交状态：${formatLatestStatusText(item.latest_status)}`"
+                  >
+                    {{ formatLatestStatusShort(item.latest_status) }}
+                  </span>
                 </td>
                 <td>
-                  <span :class="['review-tag', item.review_status]">{{ formatReviewStatus(item.review_status) }}</span>
+                  <span
+                    :class="['review-tag', item.review_status, 'compact']"
+                    :title="formatReviewBadgeText(item.review_status)"
+                    :aria-label="`批阅状态：${formatReviewBadgeText(item.review_status)}`"
+                  >
+                    {{ formatReviewBadgeShort(item.review_status) }}
+                  </span>
                 </td>
-                <td>{{ item.is_locked ? "已锁定" : "可编辑" }}</td>
+                <td class="workspace-cell" :title="item.is_locked ? '已锁定' : '可编辑'">
+                  {{ item.is_locked ? "锁" : "编" }}
+                </td>
                 <td>{{ formatTime(item.reviewed_at) }}</td>
                 <td>{{ formatTime(item.latest_updated_at) }}</td>
                 <td class="actions">
@@ -549,6 +563,46 @@ function formatReviewStatus(value) {
   }
   if (value === "failed") {
     return "未通过";
+  }
+  return "待批阅";
+}
+
+function formatLatestStatusText(value) {
+  if (value === "submitted") {
+    return "submitted";
+  }
+  if (value === "draft") {
+    return "draft";
+  }
+  return value || "-";
+}
+
+function formatLatestStatusShort(value) {
+  if (value === "submitted") {
+    return "S";
+  }
+  if (value === "draft") {
+    return "D";
+  }
+  return "-";
+}
+
+function formatReviewBadgeShort(value) {
+  if (value === "pending") {
+    return "待";
+  }
+  return "批";
+}
+
+function formatReviewBadgeText(value) {
+  if (value === "pending") {
+    return "待批阅";
+  }
+  if (value === "passed") {
+    return "已批阅（通过）";
+  }
+  if (value === "failed") {
+    return "已批阅（未通过）";
   }
   return "待批阅";
 }
@@ -1128,8 +1182,8 @@ onBeforeUnmount(() => {
 }
 
 .panel {
-  background: #fff;
-  border: 1px solid #e5e8f0;
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 18px;
 }
@@ -1140,33 +1194,33 @@ onBeforeUnmount(() => {
 
 .header-panel p {
   margin: 8px 0;
-  color: #4b5563;
+  color: var(--text-muted);
 }
 
 .back-link {
-  color: #2563eb;
+  color: var(--brand-600);
   text-decoration: none;
   font-weight: 600;
 }
 
 .error {
-  border-color: #fecaca;
-  background: #fef2f2;
-  color: #b91c1c;
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
+  color: var(--danger-strong);
 }
 
 .success {
-  border-color: #bbf7d0;
-  background: #f0fdf4;
-  color: #166534;
+  border-color: var(--success-border);
+  background: var(--success-soft);
+  color: var(--success-strong);
 }
 
 .error-text {
-  color: #b91c1c;
+  color: var(--danger-strong);
 }
 
 .hint {
-  color: #6b7280;
+  color: var(--text-subtle);
 }
 
 .settings-panel h3 {
@@ -1190,13 +1244,13 @@ onBeforeUnmount(() => {
 
 .publish-control {
   min-height: 42px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 8px 10px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #111827;
+  color: var(--text-strong);
   font-size: 14px;
 }
 
@@ -1209,8 +1263,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  color: #374151;
-  font-size: 13px;
+  color: var(--text-body);
+  font-size: 14px;
 }
 
 @media (max-width: 1100px) {
@@ -1238,13 +1292,13 @@ onBeforeUnmount(() => {
 .filter-item {
   display: grid;
   gap: 6px;
-  font-size: 13px;
-  color: #374151;
+  font-size: 14px;
+  color: var(--text-body);
 }
 
 .filter-item input,
 .filter-item select {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 14px;
@@ -1269,8 +1323,8 @@ onBeforeUnmount(() => {
 }
 
 .table-meta {
-  color: #6b7280;
-  font-size: 13px;
+  color: var(--text-subtle);
+  font-size: 14px;
 }
 
 .batch-ops {
@@ -1283,7 +1337,7 @@ onBeforeUnmount(() => {
 }
 
 .batch-meta {
-  color: #374151;
+  color: var(--text-body);
   font-size: 14px;
 }
 
@@ -1295,7 +1349,7 @@ onBeforeUnmount(() => {
 
 .batch-select,
 .batch-comment {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 7px 10px;
   font-size: 14px;
@@ -1317,20 +1371,36 @@ table {
 
 th,
 td {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-soft);
   padding: 10px 8px;
   text-align: left;
   font-size: 14px;
 }
 
 th {
-  color: #374151;
+  color: var(--text-body);
   font-weight: 700;
 }
 
 .actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.actions .btn {
+  padding: 6px 8px;
+  font-size: 12px;
+  line-height: 1.1;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+
+.workspace-cell {
+  text-align: center;
+  font-weight: 700;
+  color: var(--text-body);
 }
 
 .btn {
@@ -1338,28 +1408,28 @@ th {
   border-radius: 8px;
   padding: 7px 10px;
   cursor: pointer;
-  color: #fff;
+  color: var(--surface-1);
   font-weight: 600;
 }
 
 .btn.light {
-  background: #2563eb;
+  background: var(--brand-600);
 }
 
 .btn.return {
-  background: #7c3aed;
+  background: var(--accent-indigo-strong);
 }
 
 .btn.review {
-  background: #0f766e;
+  background: var(--accent-teal-strong);
 }
 
 .btn.gray {
-  background: #4b5563;
+  background: var(--text-muted);
 }
 
 .btn.export {
-  background: #0f766e;
+  background: var(--accent-teal-strong);
 }
 
 .btn:disabled {
@@ -1370,44 +1440,56 @@ th {
 .status-tag {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   border-radius: 999px;
   padding: 3px 10px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
+.status-tag.compact,
+.review-tag.compact {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1;
+}
+
 .status-tag.draft {
-  color: #1d4ed8;
-  background: #dbeafe;
+  color: var(--brand-700);
+  background: var(--brand-soft-2);
 }
 
 .status-tag.submitted {
-  color: #5b21b6;
-  background: #ede9fe;
+  color: var(--accent-indigo-strong);
+  background: var(--accent-indigo-soft);
 }
 
 .review-tag {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   border-radius: 999px;
   padding: 3px 10px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
 .review-tag.pending {
-  color: #92400e;
-  background: #fef3c7;
+  color: var(--warn-strong);
+  background: var(--warn-soft);
 }
 
 .review-tag.passed {
-  color: #166534;
-  background: #dcfce7;
+  color: var(--success-strong);
+  background: var(--success-soft);
 }
 
 .review-tag.failed {
-  color: #991b1b;
-  background: #fee2e2;
+  color: var(--danger-strong);
+  background: var(--danger-soft);
 }
 
 .pagination {
@@ -1423,12 +1505,12 @@ th {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #374151;
+  color: var(--text-body);
   font-size: 14px;
 }
 
 .page-size select {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 6px 8px;
 }
@@ -1437,30 +1519,31 @@ th {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #374151;
+  color: var(--text-body);
   font-size: 14px;
 }
 
 .drawer-mask {
   position: fixed;
   inset: 0;
-  background: rgba(17, 24, 39, 0.35);
+  background: var(--overlay-soft);
   display: flex;
   justify-content: flex-end;
-  z-index: 1200;
+  z-index: var(--z-drawer);
 }
 
 .history-drawer {
   width: min(980px, 92vw);
-  height: 100vh;
-  background: #fff;
+  height: 100dvh;
+  background: var(--surface-1);
   display: grid;
   grid-template-rows: auto 1fr;
-  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.16);
+  box-shadow: var(--shadow-elevated);
+  overflow: hidden;
 }
 
 .drawer-head {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-soft);
   padding: 14px 16px;
   display: flex;
   justify-content: space-between;
@@ -1474,8 +1557,8 @@ th {
 
 .drawer-title p {
   margin: 6px 0 0;
-  color: #4b5563;
-  font-size: 13px;
+  color: var(--text-muted);
+  font-size: 14px;
 }
 
 .drawer-status-line {
@@ -1483,8 +1566,8 @@ th {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  color: #374151;
-  font-size: 13px;
+  color: var(--text-body);
+  font-size: 14px;
   align-items: center;
 }
 
@@ -1504,7 +1587,7 @@ th {
 }
 
 .history-column {
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--border-soft);
   padding: 12px;
   min-height: 0;
 }
@@ -1518,9 +1601,9 @@ th {
 }
 
 .history-item {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--surface-3);
   text-align: left;
   padding: 8px 10px;
   cursor: pointer;
@@ -1529,8 +1612,8 @@ th {
 }
 
 .history-item.active {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: var(--brand-600);
+  background: var(--brand-soft);
 }
 
 .detail-column {
@@ -1549,12 +1632,12 @@ th {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  color: #374151;
-  font-size: 13px;
+  color: var(--text-body);
+  font-size: 14px;
 }
 
 .review-panel {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
   padding: 10px;
   display: grid;
@@ -1568,13 +1651,13 @@ th {
 .review-item {
   display: grid;
   gap: 6px;
-  font-size: 13px;
-  color: #374151;
+  font-size: 14px;
+  color: var(--text-body);
 }
 
 .review-item select,
 .review-item textarea {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 14px;
@@ -1595,17 +1678,17 @@ th {
 }
 
 .io-block {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
   overflow: hidden;
 }
 
 .io-title {
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-soft);
   padding: 8px 10px;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 pre {
@@ -1613,6 +1696,43 @@ pre {
   padding: 10px;
   max-height: 320px;
   overflow: auto;
-  background: #ffffff;
+  background: var(--surface-1);
+}
+
+@media (max-width: 960px) {
+  .history-drawer {
+    width: 100vw;
+  }
+
+  .drawer-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .drawer-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .drawer-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .history-column {
+    border-right: 0;
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .history-list {
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .detail-scroll {
+    max-height: none;
+    overflow-y: visible;
+  }
 }
 </style>

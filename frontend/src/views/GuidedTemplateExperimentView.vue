@@ -9,8 +9,8 @@
         <button class="btn gray" @click="goExperiments">返回实验列表</button>
         <button class="btn light" :disabled="!hasValidExperimentId" @click="goDocs">查看实验说明</button>
         <button v-if="canUseSubmissionFlow" class="btn light" :disabled="!hasValidExperimentId" @click="toggleHistoryPanel">历史记录</button>
-        <button v-if="hasEditorAccess" class="btn run" :disabled="isBusy || !hasValidExperimentId || !canRun" @click="handleRun">
-          {{ isRunning ? "运行中..." : "运行" }}
+        <button v-if="hasEditorAccess" class="btn run" :disabled="runActionDisabled" @click="handleRunAction">
+          {{ runActionText }}
         </button>
         <button v-if="canUseSubmissionFlow" class="btn save" :disabled="isBusy || !hasValidExperimentId || !canSaveDraft" @click="handleSave">
           {{ isSaving ? "保存中..." : "保存草稿" }}
@@ -42,11 +42,16 @@
         <div class="params-grid">
           <label class="field">
             <span>目标网址（target_url）</span>
-            <input v-model.trim="templateForm.target_url" type="text" :placeholder="fieldPlaceholders.target_url" :disabled="isBusy" />
+            <input
+              v-model.trim="templateForm.target_url"
+              type="text"
+              :placeholder="fieldPlaceholders.target_url"
+              :disabled="isBusy || !canTemplateActions"
+            />
           </label>
           <label class="field">
             <span>User-Agent（user_agent）</span>
-            <select v-model="templateForm.user_agent" :disabled="isBusy">
+            <select v-model="templateForm.user_agent" :disabled="isBusy || !canTemplateActions">
               <option value="">{{ fieldPlaceholders.user_agent || "请选择" }}</option>
               <option v-for="item in userAgentOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
             </select>
@@ -59,7 +64,7 @@
               min="1"
               max="100"
               :placeholder="fieldPlaceholders.preview_count"
-              :disabled="isBusy"
+              :disabled="isBusy || !canTemplateActions"
             />
           </label>
           <label class="field">
@@ -79,7 +84,12 @@
             <h4>可选库（可勾选）</h4>
             <p v-if="optionalImports.length === 0" class="hint">暂无可选库</p>
             <label v-for="item in optionalImports" :key="item" class="option-item">
-              <input v-model="selectedOptionalImports" type="checkbox" :value="item" :disabled="isBusy" />
+              <input
+                v-model="selectedOptionalImports"
+                type="checkbox"
+                :value="item"
+                :disabled="isBusy || !canTemplateActions"
+              />
               <span>{{ item }}</span>
             </label>
           </article>
@@ -88,7 +98,7 @@
             <textarea
               v-model="customImportText"
               rows="6"
-              :disabled="isBusy || !allowCustomImport"
+              :disabled="isBusy || !allowCustomImport || !canTemplateActions"
               placeholder="示例：&#10;import json&#10;import re&#10;from sklearn.model_selection import train_test_split"
             ></textarea>
             <p class="hint">仅支持 import / from ... import ...，并受白名单与危险库规则校验。</p>
@@ -96,10 +106,10 @@
         </div>
 
         <div class="inline-actions">
-          <button class="btn plain" :disabled="isBusy" @click="loadTemplateSkeleton">加载骨架模板代码</button>
-          <button class="btn plain" :disabled="isBusy" @click="clearEditorCode">清空骨架模板代码</button>
-          <button class="btn plain" :disabled="isBusy" @click="restoreDefaultSkeleton">恢复默认骨架模板代码</button>
-          <button class="btn primary" :disabled="isBusy" @click="applyTemplateToCode">应用参数到代码</button>
+          <button class="btn plain" :disabled="isBusy || !canTemplateActions" @click="loadTemplateSkeleton">加载骨架模板代码</button>
+          <button class="btn plain" :disabled="isBusy || !canTemplateActions" @click="clearEditorCode">清空骨架模板代码</button>
+          <button class="btn plain" :disabled="isBusy || !canTemplateActions" @click="restoreDefaultSkeleton">恢复默认骨架模板代码</button>
+          <button class="btn primary" :disabled="isBusy || !canTemplateActions" @click="applyTemplateToCode">应用参数到代码</button>
         </div>
         <p v-if="templateError" class="tips error-text">{{ templateError }}</p>
         <p v-else-if="templateMessage" class="tips success-text">{{ templateMessage }}</p>
@@ -167,14 +177,14 @@
             <button
               v-if="hasEditorAccess"
               class="mini-action mini-run"
-              :disabled="isBusy || !hasValidExperimentId || !canRun"
+              :disabled="runActionDisabled"
               title="运行代码"
-              @click="handleRun"
+              @click="handleRunAction"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M8 5v14l11-7z" fill="currentColor" />
               </svg>
-              <span>运行</span>
+              <span>{{ miniRunActionText }}</span>
             </button>
           </div>
           <div ref="editorContainer" class="editor-instance"></div>
@@ -188,6 +198,7 @@
       :loading="isRunning"
       :result="runResult"
       :message="message"
+      :run-owner-label="runOwnerLabel"
       :rerun-disabled="rerunDisabled"
       :save-visible="canUseSubmissionFlow"
       :save-disabled="saveInDrawerDisabled"
@@ -226,8 +237,16 @@ import { formatApiDateTime, parseApiDateTime } from "../utils/datetime";
 
 const route = useRoute();
 const router = useRouter();
-const viewerRole = ref(getStoredCurrentUser()?.role || localStorage.getItem("role") || "");
+const currentViewer = getStoredCurrentUser() || {};
+const viewerRole = ref(currentViewer?.role || localStorage.getItem("role") || "");
+const runResultOwnerKey = String(currentViewer?.id || currentViewer?.username || "anonymous");
+const runOwnerLabel = computed(() => {
+  const roleText = viewerRole.value === "admin" ? "管理员" : viewerRole.value === "teacher" ? "教师" : "学生";
+  const name = currentViewer?.full_name || currentViewer?.username || "当前用户";
+  return `${name}（${roleText}）`;
+});
 const fallbackExperimentId = Number(import.meta.env.VITE_EXPERIMENT_ID);
+const runResultStorageNamespace = "edu:last-run-result:guided-template";
 
 const experiment = ref(null);
 const currentCode = ref("");
@@ -311,6 +330,9 @@ function parseExperimentId(rawValue) {
 
 const experimentId = computed(() => parseExperimentId(route.query.experiment_id));
 const hasValidExperimentId = computed(() => experimentId.value > 0);
+const runResultStorageKey = computed(() =>
+  hasValidExperimentId.value ? `${runResultStorageNamespace}:${runResultOwnerKey}:${experimentId.value}` : "",
+);
 const isAdminViewer = computed(() => viewerRole.value === "admin");
 const experimentTitle = computed(() => experiment.value?.title || "引导式模板实验");
 const experimentDescription = computed(
@@ -329,12 +351,27 @@ const canRestoreHistory = computed(() => canEdit.value && !isWorkspaceLocked.val
 const isAccessRestricted = computed(() => Boolean(accessRestriction.value.blocked));
 const hasEditorAccess = computed(() => !isAccessCheckLoading.value && !isAccessRestricted.value);
 const canUseSubmissionFlow = computed(() => hasEditorAccess.value && !isAdminViewer.value);
+const canTemplateActions = computed(() => hasEditorAccess.value && canEdit.value);
 const hasEditorContent = computed(() => Boolean((currentCode.value || "").trim()));
 
 const rerunDisabled = computed(() => !hasEditorAccess.value || !hasValidExperimentId.value || !canRun.value || isBusy.value);
 const saveInDrawerDisabled = computed(
   () => !hasEditorAccess.value || !hasValidExperimentId.value || !canSaveDraft.value || isBusy.value,
 );
+const hasRunResult = computed(() => Boolean(runResult.value));
+const runActionDisabled = computed(
+  () => isBusy.value || !hasValidExperimentId.value || (!canRun.value && !hasRunResult.value),
+);
+const runActionText = computed(() => {
+  if (isRunning.value) return "运行中...";
+  if (!canRun.value && hasRunResult.value) return "查看运行结果";
+  return "运行";
+});
+const miniRunActionText = computed(() => {
+  if (isRunning.value) return "运行中";
+  if (!canRun.value && hasRunResult.value) return "查看结果";
+  return "运行";
+});
 
 const latestRunStatus = computed(() => runResult.value?.status || "-");
 const latestRunDuration = computed(() =>
@@ -741,6 +778,59 @@ function normalizeLegacyHeadersTemplate(templateCode) {
   return code;
 }
 
+function restoreRunResultSnapshot() {
+  if (!runResultStorageKey.value || typeof window === "undefined") {
+    return null;
+  }
+  try {
+    const raw = window.localStorage.getItem(runResultStorageKey.value);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    const snapshot = parsed?.result;
+    if (!snapshot || typeof snapshot !== "object") {
+      return null;
+    }
+    return snapshot;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function saveRunResultSnapshot(nextResult) {
+  if (!runResultStorageKey.value || typeof window === "undefined" || !nextResult || typeof nextResult !== "object") {
+    return;
+  }
+  try {
+    window.localStorage.setItem(
+      runResultStorageKey.value,
+      JSON.stringify({
+        saved_at: new Date().toISOString(),
+        result: nextResult,
+      }),
+    );
+  } catch (_error) {
+    // ignore storage write errors
+  }
+}
+
+function ensureTemplateActionsAllowed() {
+  if (canTemplateActions.value) {
+    return true;
+  }
+  if (isOverdue.value) {
+    templateError.value = "本实验已截止，当前不可再应用模板或修改代码。";
+    return false;
+  }
+  if (isWorkspaceLocked.value) {
+    templateError.value = "该实验已正式提交，当前代码已锁定，不能再加载/清空/恢复模板或应用参数。";
+    return false;
+  }
+  templateError.value = "当前不可修改模板代码。";
+  return false;
+}
+
 function applyTemplateValue(templateCode, importStatements) {
   const safePreviewCount = Math.floor(Number(templateForm.preview_count));
   const importBlock = importStatements.join("\n");
@@ -763,6 +853,9 @@ async function applyTemplateToCode() {
   templateError.value = "";
   templateMessage.value = "";
   try {
+    if (!ensureTemplateActionsAllowed()) {
+      return;
+    }
     if (!templateForm.target_url.trim()) {
       throw new Error("目标网址不能为空");
     }
@@ -794,6 +887,9 @@ function confirmBeforeTemplateOverride(confirmText) {
 async function loadTemplateSkeleton() {
   templateError.value = "";
   templateMessage.value = "";
+  if (!ensureTemplateActionsAllowed()) {
+    return;
+  }
   const nextCode = getTemplateContent();
   if (!nextCode.trim()) {
     templateError.value = "该实验模板尚未配置完整：未配置 code_template";
@@ -810,6 +906,9 @@ async function loadTemplateSkeleton() {
 async function clearEditorCode() {
   templateError.value = "";
   templateMessage.value = "";
+  if (!ensureTemplateActionsAllowed()) {
+    return;
+  }
   const shouldContinue = confirmBeforeTemplateOverride("确认清空当前编辑器代码吗？此操作会覆盖现有内容。");
   if (!shouldContinue) {
     return;
@@ -821,6 +920,9 @@ async function clearEditorCode() {
 async function restoreDefaultSkeleton() {
   templateError.value = "";
   templateMessage.value = "";
+  if (!ensureTemplateActionsAllowed()) {
+    return;
+  }
   const nextCode = getTemplateContent();
   if (!nextCode.trim()) {
     templateError.value = "该实验模板尚未配置完整：未配置 code_template";
@@ -971,6 +1073,16 @@ async function loadExperimentAndCode() {
       message.value = "未检测到历史代码，请先点击“加载骨架模板代码”或“恢复默认骨架模板代码”。";
     }
     setEditorValue(nextCode, { markAsSaved: true });
+    const restoredRunResult = restoreRunResultSnapshot();
+    if (restoredRunResult) {
+      runResult.value = restoredRunResult;
+      if (!canRun.value) {
+        message.value = `${message.value ? `${message.value}；` : ""}已恢复最近一次运行结果，可点击“查看运行结果”`;
+      }
+    }
+    if (isWorkspaceLocked.value && hasRunResult.value) {
+      message.value = `${workspaceMessage.value}，可点击“查看运行结果”查看最近一次运行输出`;
+    }
   } catch (error) {
     experiment.value = null;
     setEditorValue("");
@@ -1016,12 +1128,24 @@ async function handleRun() {
   message.value = "";
   try {
     runResult.value = await runCode(currentCode.value, experimentId.value);
+    saveRunResultSnapshot(runResult.value);
     message.value = "运行完成";
   } catch (error) {
     message.value = `运行失败：${error.message}`;
   } finally {
     isRunning.value = false;
   }
+}
+
+function handleRunAction() {
+  if (!canRun.value && hasRunResult.value) {
+    showRunResultDrawer.value = true;
+    message.value = isOverdue.value
+      ? "本实验已截止，当前不可重新运行代码，已为你打开最近一次运行结果。"
+      : "当前运行权限已关闭，已为你打开最近一次运行结果。";
+    return;
+  }
+  handleRun();
 }
 
 async function handleSave() {
@@ -1233,8 +1357,8 @@ onBeforeUnmount(() => {
 }
 
 .panel {
-  background: #fff;
-  border: 1px solid #e5e8f0;
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 16px;
 }
@@ -1251,14 +1375,14 @@ onBeforeUnmount(() => {
 
 .head-main p {
   margin: 8px 0 0;
-  color: #64748b;
+  color: var(--text-subtle);
 }
 
 .head-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  border-top: 1px solid #eef2ff;
+  border-top: 1px solid var(--border-soft);
   padding-top: 12px;
 }
 
@@ -1268,37 +1392,37 @@ onBeforeUnmount(() => {
   padding: 9px 14px;
   font-weight: 700;
   cursor: pointer;
-  color: #fff;
+  color: var(--surface-1);
 }
 
 .btn.primary {
-  background: #2563eb;
+  background: var(--brand-600);
 }
 
 .btn.run {
-  background: #2563eb;
+  background: var(--brand-600);
 }
 
 .btn.save {
-  background: #059669;
+  background: var(--accent-teal-strong);
 }
 
 .btn.submit {
-  background: #7c3aed;
+  background: var(--accent-indigo-strong);
 }
 
 .btn.light {
-  background: #e0e7ff;
-  color: #1d4ed8;
+  background: var(--brand-soft-2);
+  color: var(--brand-700);
 }
 
 .btn.gray {
-  background: #4b5563;
+  background: var(--text-muted);
 }
 
 .btn.plain {
-  background: #e5e7eb;
-  color: #111827;
+  background: var(--neutral-btn);
+  color: var(--text-strong);
 }
 
 .btn:disabled {
@@ -1308,21 +1432,21 @@ onBeforeUnmount(() => {
 
 .state,
 .info {
-  color: #1e3a8a;
-  background: #eff6ff;
-  border-color: #bfdbfe;
+  color: var(--brand-800);
+  background: var(--brand-soft);
+  border-color: var(--brand-border);
 }
 
 .warn {
-  color: #92400e;
-  background: #fffbeb;
-  border-color: #fcd34d;
+  color: var(--warn-strong);
+  background: var(--warn-soft);
+  border-color: var(--warn-border);
 }
 
 .error {
-  color: #b91c1c;
-  background: #fef2f2;
-  border-color: #fecaca;
+  color: var(--danger-strong);
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
 }
 
 .params-panel h3 {
@@ -1342,8 +1466,8 @@ onBeforeUnmount(() => {
 }
 
 .field span {
-  font-size: 13px;
-  color: #4b5563;
+  font-size: 14px;
+  color: var(--text-muted);
 }
 
 .field input,
@@ -1351,7 +1475,7 @@ onBeforeUnmount(() => {
 .field textarea {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 8px 10px;
   font-family: inherit;
@@ -1365,9 +1489,9 @@ onBeforeUnmount(() => {
 }
 
 .import-box {
-  border: 1px solid #e5e8f0;
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--surface-3);
   padding: 10px;
 }
 
@@ -1381,21 +1505,21 @@ onBeforeUnmount(() => {
   padding-left: 18px;
   display: grid;
   gap: 4px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .option-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 14px;
   margin-bottom: 6px;
 }
 
 .hint {
   margin: 0;
-  color: #6b7280;
-  font-size: 13px;
+  color: var(--text-subtle);
+  font-size: 14px;
 }
 
 .inline-actions {
@@ -1407,15 +1531,15 @@ onBeforeUnmount(() => {
 
 .tips {
   margin: 8px 0 0;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .success-text {
-  color: #166534;
+  color: var(--success-strong);
 }
 
 .error-text {
-  color: #b91c1c;
+  color: var(--danger-strong);
 }
 
 .history-panel {
@@ -1441,9 +1565,9 @@ onBeforeUnmount(() => {
 }
 
 .history-item {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--surface-3);
   text-align: left;
   padding: 10px 12px;
   display: grid;
@@ -1452,8 +1576,8 @@ onBeforeUnmount(() => {
 }
 
 .history-item.active {
-  border-color: #6366f1;
-  background: #eef2ff;
+  border-color: var(--accent-indigo-border);
+  background: var(--accent-indigo-soft);
 }
 
 .history-item.locked {
@@ -1461,8 +1585,8 @@ onBeforeUnmount(() => {
 }
 
 .mini-label {
-  color: #4338ca;
-  font-size: 12px;
+  color: var(--accent-indigo-strong);
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -1481,20 +1605,20 @@ onBeforeUnmount(() => {
 .status-item {
   border-radius: 999px;
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  background: #eef2ff;
-  color: #312e81;
+  background: var(--accent-indigo-soft);
+  color: var(--accent-indigo-strong);
 }
 
 .status-hint {
   margin: 0 14px 10px;
-  color: #1e3a8a;
-  background: #dbeafe;
-  border: 1px solid #93c5fd;
+  color: var(--brand-800);
+  background: var(--brand-soft-2);
+  border: 1px solid var(--brand-border-strong);
   border-radius: 8px;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -1515,16 +1639,16 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   height: 32px;
   padding: 0 10px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  background: #fff;
-  color: #1f2937;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+  background: var(--surface-1);
+  color: var(--text-strong);
+  box-shadow: var(--shadow-soft);
 }
 
 .mini-action svg {
@@ -1533,13 +1657,13 @@ onBeforeUnmount(() => {
 }
 
 .mini-run {
-  border-color: #93c5fd;
-  color: #1d4ed8;
+  border-color: var(--brand-border-strong);
+  color: var(--brand-700);
 }
 
 .mini-save {
-  border-color: #86efac;
-  color: #047857;
+  border-color: var(--success-border);
+  color: var(--success-strong);
 }
 
 .mini-action:disabled {
@@ -1554,12 +1678,14 @@ onBeforeUnmount(() => {
 .editor-overlay {
   position: absolute;
   inset: 0;
+  z-index: 12;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.7);
-  color: #1f2937;
+  background: var(--overlay-panel);
+  color: var(--text-strong);
   font-weight: 600;
+  pointer-events: all;
 }
 
 @media (max-width: 980px) {

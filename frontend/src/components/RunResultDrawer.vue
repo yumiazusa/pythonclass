@@ -15,6 +15,16 @@
             <button v-if="saveVisible" class="btn save" :disabled="saveDisabled || loading || saveLoading" @click="emit('save')">
               {{ saveLoading ? "保存中..." : "保存草稿" }}
             </button>
+            <button
+              v-if="displayRunOwnerLabel"
+              type="button"
+              class="btn viewer-info"
+              disabled
+              :title="`当前运行结果：${displayRunOwnerLabel}`"
+              aria-label="当前运行结果所属用户"
+            >
+              {{ displayRunOwnerLabel }}
+            </button>
             <button class="btn close" @click="emit('close')">关闭</button>
           </div>
         </header>
@@ -121,9 +131,14 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  runOwnerLabel: {
+    type: String,
+    default: "",
+  },
 });
 
 const emit = defineEmits(["close", "rerun", "save"]);
+const displayRunOwnerLabel = computed(() => props.runOwnerLabel?.trim() || "");
 
 const statusTextMap = {
   not_run: "未运行",
@@ -442,14 +457,14 @@ watch(
     if (typeof document === "undefined") {
       return;
     }
-    document.body.style.overflow = visible ? "hidden" : "";
+    document.body.classList.toggle("run-result-open", visible);
   },
   { immediate: true },
 );
 
 onBeforeUnmount(() => {
   if (typeof document !== "undefined") {
-    document.body.style.overflow = "";
+    document.body.classList.remove("run-result-open");
   }
 });
 </script>
@@ -458,13 +473,13 @@ onBeforeUnmount(() => {
 .drawer-root {
   position: fixed;
   inset: 0;
-  z-index: 999;
+  z-index: var(--z-drawer);
 }
 
 .drawer-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: var(--overlay-soft);
 }
 
 .drawer-panel {
@@ -472,11 +487,13 @@ onBeforeUnmount(() => {
   top: 0;
   right: 0;
   width: min(1080px, 100vw);
-  height: 100vh;
-  background: #fff;
+  height: 100dvh;
+  background: var(--surface-1);
   display: flex;
   flex-direction: column;
-  box-shadow: -16px 0 32px rgba(15, 23, 42, 0.2);
+  border-left: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-elevated);
+  overflow: hidden;
 }
 
 .drawer-header {
@@ -485,7 +502,7 @@ onBeforeUnmount(() => {
   align-items: flex-start;
   gap: 12px;
   padding: 16px 18px;
-  border-bottom: 1px solid #e5e8f0;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .drawer-header h3 {
@@ -495,8 +512,8 @@ onBeforeUnmount(() => {
 
 .drawer-header p {
   margin: 6px 0 0;
-  color: #64748b;
-  font-size: 13px;
+  color: var(--text-subtle);
+  font-size: 14px;
 }
 
 .header-actions {
@@ -514,18 +531,35 @@ onBeforeUnmount(() => {
 }
 
 .btn.rerun {
-  background: #2563eb;
-  color: #fff;
+  background: var(--brand-600);
+  color: var(--surface-1);
 }
 
 .btn.close {
-  background: #e5e7eb;
-  color: #111827;
+  background: var(--neutral-btn);
+  color: var(--text-strong);
 }
 
 .btn.save {
-  background: #059669;
-  color: #fff;
+  background: var(--accent-teal-strong);
+  color: var(--surface-1);
+}
+
+.btn.viewer-info {
+  background: color-mix(in srgb, var(--surface-1) 68%, var(--brand-soft) 32%);
+  border: 1px solid color-mix(in srgb, var(--brand-border) 68%, var(--border-soft) 32%);
+  color: var(--brand-800);
+  cursor: default;
+  pointer-events: none;
+  max-width: min(34vw, 300px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn.viewer-info:disabled {
+  opacity: 1;
+  cursor: default;
 }
 
 .btn:disabled {
@@ -539,7 +573,9 @@ onBeforeUnmount(() => {
   padding: 16px 18px;
   display: grid;
   gap: 12px;
-  background: #f8fafc;
+  background: color-mix(in srgb, var(--surface-3) 86%, var(--surface-2) 14%);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .summary-grid {
@@ -549,8 +585,8 @@ onBeforeUnmount(() => {
 }
 
 .summary-card {
-  border: 1px solid #dbeafe;
-  background: #eff6ff;
+  border: 1px solid var(--brand-soft-2);
+  background: var(--brand-soft);
   border-radius: 10px;
   padding: 10px 12px;
   display: grid;
@@ -559,40 +595,40 @@ onBeforeUnmount(() => {
 }
 
 .summary-card.ok {
-  border-color: #bbf7d0;
-  background: #f0fdf4;
+  border-color: var(--success-border);
+  background: var(--success-soft);
 }
 
 .summary-card.warn {
-  border-color: #fed7aa;
-  background: #fff7ed;
+  border-color: var(--warn-border);
+  background: var(--warn-soft);
 }
 
 .summary-card.error {
-  border-color: #fecaca;
-  background: #fef2f2;
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
 }
 
 .summary-card.ok .summary-value {
-  color: #166534;
+  color: var(--success-strong);
 }
 
 .summary-card.warn .summary-value {
-  color: #9a3412;
+  color: var(--warn-strong);
 }
 
 .summary-card.error .summary-value {
-  color: #b91c1c;
+  color: var(--danger-strong);
 }
 
 .summary-label {
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1;
+  color: var(--text-subtle);
+  font-size: 14px;
+  line-height: 1.2;
 }
 
 .summary-value {
-  color: #1e3a8a;
+  color: var(--brand-800);
   font-size: 20px;
   font-weight: 700;
   line-height: 1.2;
@@ -600,18 +636,18 @@ onBeforeUnmount(() => {
 }
 
 .loading-panel {
-  border: 1px solid #bfdbfe;
-  background: #eff6ff;
-  color: #1d4ed8;
+  border: 1px solid var(--brand-border);
+  background: var(--brand-soft);
+  color: var(--brand-700);
   border-radius: 10px;
   padding: 10px 12px;
   font-weight: 600;
 }
 
 .content-card {
-  border: 1px solid #e5e8f0;
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
-  background: #fff;
+  background: var(--surface-1);
   padding: 12px;
 }
 
@@ -623,55 +659,55 @@ onBeforeUnmount(() => {
 .content-card pre {
   margin: 0;
   border-radius: 8px;
-  background: #0f172a;
-  color: #e2e8f0;
+  background: var(--code-bg);
+  color: var(--code-text);
   padding: 10px 12px;
   max-height: 240px;
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-word;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
 }
 
 .empty-text {
   margin: 0;
-  color: #64748b;
-  font-size: 13px;
+  color: var(--text-subtle);
+  font-size: 14px;
 }
 
 .table-scroll {
   max-height: 320px;
   overflow: auto;
-  border: 1px solid #e5e8f0;
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
 }
 
 .table-scroll table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .table-scroll th,
 .table-scroll td {
-  border-bottom: 1px solid #e5e8f0;
+  border-bottom: 1px solid var(--border-soft);
   padding: 8px 10px;
   text-align: left;
   vertical-align: top;
 }
 
 .table-scroll th {
-  background: #f1f5f9;
+  background: var(--surface-3);
   position: sticky;
   top: 0;
   z-index: 1;
 }
 
 .chart-wrap {
-  border: 1px solid #e5e8f0;
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface-1);
   padding: 10px;
   text-align: center;
 }
@@ -682,13 +718,13 @@ onBeforeUnmount(() => {
 }
 
 .error-card {
-  border-color: #fecaca;
-  background: #fff7f7;
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
 }
 
 .error-card pre {
-  background: #7f1d1d;
-  color: #fee2e2;
+  background: var(--danger-strong);
+  color: var(--danger-soft);
 }
 
 @media (max-width: 900px) {
@@ -696,8 +732,23 @@ onBeforeUnmount(() => {
     width: 100vw;
   }
 
+  .drawer-header {
+    padding: 14px;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .content-card pre,
+  .table-scroll {
+    max-height: none;
+    overflow: visible;
   }
 }
 
@@ -705,5 +756,39 @@ onBeforeUnmount(() => {
   .summary-grid {
     grid-template-columns: 1fr;
   }
+
+  .drawer-header {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .header-actions {
+    justify-content: stretch;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  }
+
+  .btn {
+    width: 100%;
+    padding: 9px 8px;
+    font-size: 14px;
+  }
+
+  .btn.viewer-info {
+    max-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .drawer-backdrop {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+:global(body.run-result-open) {
+  overflow: hidden;
 }
 </style>
