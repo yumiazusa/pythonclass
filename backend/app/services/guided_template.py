@@ -10,6 +10,7 @@ ALLOWED_IMPORT_MODULES = {
     "seaborn",
     "sklearn",
     "pymysql",
+    "sqlalchemy",
     "json",
     "re",
     "math",
