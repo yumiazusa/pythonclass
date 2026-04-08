@@ -544,6 +544,7 @@ function normalizeOptionalImportToStatement(moduleName) {
 function normalizeImportOption(item) {
   const raw = String(item || "").trim();
   if (!raw) return "";
+  if (raw.startsWith("import ") || raw.startsWith("from ")) return raw;
   if (raw.startsWith("from bs4 import")) return "bs4";
   if (raw.startsWith("import requests")) return "requests";
   if (raw.startsWith("import pandas")) return "pandas";
