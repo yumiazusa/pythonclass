@@ -9,6 +9,7 @@ ALLOWED_IMPORT_MODULES = {
     "matplotlib",
     "seaborn",
     "sklearn",
+    "pymysql",
     "json",
     "re",
     "math",

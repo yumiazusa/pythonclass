@@ -40,30 +40,27 @@
       <article class="panel params-panel">
         <h3>参数设置（guided template）</h3>
         <div class="params-grid">
-          <label class="field">
-            <span>目标网址（target_url）</span>
-            <input
-              v-model.trim="templateForm.target_url"
-              type="text"
-              :placeholder="fieldPlaceholders.target_url"
-              :disabled="isBusy || !canTemplateActions"
-            />
-          </label>
-          <label class="field">
-            <span>User-Agent（user_agent）</span>
-            <select v-model="templateForm.user_agent" :disabled="isBusy || !canTemplateActions">
-              <option value="">{{ fieldPlaceholders.user_agent || "请选择" }}</option>
-              <option v-for="item in userAgentOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
+          <label v-for="field in templateFields" :key="field.name" class="field">
+            <span>{{ field.label }}（{{ field.name }}）</span>
+            <select v-if="field.type === 'select'" v-model="templateForm[field.name]" :disabled="isBusy || !canTemplateActions">
+              <option value="">{{ field.placeholder || "请选择" }}</option>
+              <option v-for="item in field.options" :key="`${field.name}-${item.value}`" :value="item.value">{{ item.label }}</option>
             </select>
-          </label>
-          <label class="field">
-            <span>展示前几条（preview_count）</span>
+            <textarea
+              v-else-if="field.type === 'textarea'"
+              v-model="templateForm[field.name]"
+              rows="4"
+              :placeholder="field.placeholder"
+              :disabled="isBusy || !canTemplateActions"
+            ></textarea>
             <input
-              v-model.number="templateForm.preview_count"
-              type="number"
-              min="1"
-              max="100"
-              :placeholder="fieldPlaceholders.preview_count"
+              v-else
+              v-model="templateForm[field.name]"
+              :type="resolveInputType(field)"
+              :min="field.type === 'number' && field.min !== null ? field.min : undefined"
+              :max="field.type === 'number' && field.max !== null ? field.max : undefined"
+              :step="field.type === 'number' && field.step !== null ? field.step : undefined"
+              :placeholder="field.placeholder"
               :disabled="isBusy || !canTemplateActions"
             />
           </label>
@@ -93,12 +90,12 @@
               <span>{{ item }}</span>
             </label>
           </article>
-          <article class="import-box">
+          <article v-if="allowCustomImport" class="import-box">
             <h4>自定义导入（多行）</h4>
             <textarea
               v-model="customImportText"
               rows="6"
-              :disabled="isBusy || !allowCustomImport || !canTemplateActions"
+              :disabled="isBusy || !canTemplateActions"
               placeholder="示例：&#10;import json&#10;import re&#10;from sklearn.model_selection import train_test_split"
             ></textarea>
             <p class="hint">仅支持 import / from ... import ...，并受白名单与危险库规则校验。</p>
@@ -280,19 +277,9 @@ const accessRestriction = ref({
   message: "",
 });
 
-const templateForm = reactive({
-  target_url: "",
-  user_agent: "",
-  preview_count: null,
-});
-const requiredTemplateFields = ["target_url", "user_agent", "preview_count"];
+const templateForm = reactive({});
+const templateFields = ref([]);
 const originalTemplateCode = ref("");
-const userAgentOptions = ref([]);
-const fieldPlaceholders = reactive({
-  target_url: "",
-  user_agent: "请选择",
-  preview_count: "",
-});
 const fixedImports = ref([]);
 const optionalImports = ref([]);
 const selectedOptionalImports = ref([]);
@@ -606,21 +593,97 @@ function toPythonDictLiteral(payload) {
   return lines.join("\n");
 }
 
-function normalizeUserAgentOption(option) {
-  if (!option || typeof option !== "object") {
-    return null;
+function normalizeTemplateFieldOption(option) {
+  if (option && typeof option === "object") {
+    const value = String(option.value ?? "").trim();
+    if (!value) {
+      return null;
+    }
+    const label = String(option.label ?? value);
+    const headers = option.headers && typeof option.headers === "object" ? option.headers : null;
+    return { value, label, headers };
   }
-  const value = String(option.value || "").trim();
+  const value = String(option ?? "").trim();
   if (!value) {
     return null;
   }
-  const label = String(option.label || value);
-  const headers = option.headers && typeof option.headers === "object" ? option.headers : null;
-  return { value, label, headers };
+  return { value, label: value, headers: null };
+}
+
+function normalizeTemplateField(field) {
+  if (!field || typeof field !== "object") {
+    return null;
+  }
+  const name = String(field.name ?? "").trim();
+  if (!name) {
+    return null;
+  }
+  const rawType = String(field.type ?? "text").trim().toLowerCase();
+  const type = ["text", "number", "select", "password", "textarea"].includes(rawType) ? rawType : "text";
+  const label = String(field.label ?? name).trim() || name;
+  const placeholder = typeof field.placeholder === "string" ? field.placeholder.trim() : "";
+  const options = type === "select" && Array.isArray(field.options) ? field.options.map(normalizeTemplateFieldOption).filter(Boolean) : [];
+  const hasDefault = Object.prototype.hasOwnProperty.call(field, "default") && field.default !== null && field.default !== undefined;
+  const numberMin = Number(field.min);
+  const numberMax = Number(field.max);
+  const numberStep = Number(field.step);
+  return {
+    name,
+    label,
+    type,
+    required: field.required === true,
+    placeholder: placeholder || (type === "select" ? "请选择" : ""),
+    options,
+    hasDefault,
+    defaultValue: hasDefault ? field.default : "",
+    min: Number.isFinite(numberMin) ? numberMin : null,
+    max: Number.isFinite(numberMax) ? numberMax : null,
+    step: Number.isFinite(numberStep) ? numberStep : null,
+  };
+}
+
+function extractTemplateFields(schemaValue) {
+  const schema = schemaValue && typeof schemaValue === "object" ? schemaValue : {};
+  const rawFields = Array.isArray(schema.fields) ? schema.fields : [];
+  return rawFields.map(normalizeTemplateField).filter(Boolean);
+}
+
+function resolveInputType(field) {
+  if (field?.type === "password") return "password";
+  if (field?.type === "number") return "number";
+  return "text";
+}
+
+function resolveTemplateFieldDefaultValue(field) {
+  if (!field?.hasDefault) {
+    return "";
+  }
+  if (field.type === "number") {
+    const defaultNumber = Number(field.defaultValue);
+    return Number.isFinite(defaultNumber) ? String(defaultNumber) : "";
+  }
+  return String(field.defaultValue ?? "");
+}
+
+function resolveTemplateFieldRawValue(field) {
+  if (!field?.name) {
+    return "";
+  }
+  return templateForm[field.name];
+}
+
+function resolveTemplateFieldTextValue(field) {
+  const rawValue = resolveTemplateFieldRawValue(field);
+  return String(rawValue ?? "").trim();
 }
 
 function resolveHeadersBlock() {
-  const selected = userAgentOptions.value.find((item) => item.value === templateForm.user_agent);
+  const userAgentField = templateFields.value.find((field) => field.name === "user_agent" && field.type === "select");
+  if (!userAgentField) {
+    return "{}";
+  }
+  const selectedValue = resolveTemplateFieldTextValue(userAgentField);
+  const selected = userAgentField.options.find((item) => item.value === selectedValue);
   if (!selected || !selected.headers) {
     return "{}";
   }
@@ -628,11 +691,16 @@ function resolveHeadersBlock() {
 }
 
 function resolveSelectedUserAgentValue() {
-  const selected = userAgentOptions.value.find((item) => item.value === templateForm.user_agent);
-  if (!selected || !selected.headers) {
+  const userAgentField = templateFields.value.find((field) => field.name === "user_agent" && field.type === "select");
+  if (!userAgentField) {
     return "";
   }
-  return String(selected.headers["User-Agent"] || "");
+  const selectedValue = resolveTemplateFieldTextValue(userAgentField);
+  const selected = userAgentField.options.find((item) => item.value === selectedValue);
+  if (!selected || !selected.headers) {
+    return selectedValue;
+  }
+  return String(selected.headers["User-Agent"] || selectedValue || "");
 }
 
 function getTemplateContent() {
@@ -644,32 +712,33 @@ function validateTemplateConfiguration(experimentDetail) {
   if (!schema || typeof schema !== "object") {
     return { valid: false, message: "该实验模板尚未配置完整：缺少 template_schema" };
   }
-  const fields = Array.isArray(schema.fields) ? schema.fields.filter((item) => item && typeof item === "object") : [];
+  const fields = extractTemplateFields(schema);
   if (fields.length === 0) {
     return { valid: false, message: "该实验模板尚未配置完整：template_schema.fields 为空" };
   }
-  for (const fieldName of requiredTemplateFields) {
-    if (!fields.some((field) => field.name === fieldName)) {
-      return { valid: false, message: `该实验模板尚未配置完整：缺少参数字段 ${fieldName}` };
+  const fieldNameSet = new Set();
+  for (const field of fields) {
+    if (fieldNameSet.has(field.name)) {
+      return { valid: false, message: `该实验模板尚未配置完整：字段名重复（${field.name}）` };
     }
-  }
-
-  const userAgentField = fields.find((field) => field.name === "user_agent");
-  if (!userAgentField || userAgentField.type !== "select") {
-    return { valid: false, message: "该实验模板尚未配置完整：user_agent 必须配置为下拉选择字段" };
-  }
-  const options = Array.isArray(userAgentField.options) ? userAgentField.options : [];
-  const normalizedOptions = options.map(normalizeUserAgentOption).filter(Boolean);
-  if (normalizedOptions.length === 0) {
-    return { valid: false, message: "该实验模板尚未配置完整：user_agent 缺少可用选项" };
-  }
-  if (!normalizedOptions.some((option) => option.headers && Object.keys(option.headers).length > 0)) {
-    return { valid: false, message: "该实验模板尚未配置完整：user_agent 选项缺少 headers 映射" };
+    fieldNameSet.add(field.name);
+    if (field.type === "select" && field.options.length === 0) {
+      return { valid: false, message: `该实验模板尚未配置完整：下拉字段 ${field.name} 缺少 options` };
+    }
   }
 
   const codeTemplate = experimentDetail?.code_template;
   if (typeof codeTemplate !== "string" || !codeTemplate.trim()) {
     return { valid: false, message: "该实验模板尚未配置完整：缺少 code_template" };
+  }
+  if (/\{\{\s*headers_block\s*\}\}/.test(codeTemplate)) {
+    const userAgentField = fields.find((field) => field.name === "user_agent" && field.type === "select");
+    if (!userAgentField) {
+      return { valid: false, message: "该实验模板尚未配置完整：headers_block 依赖 user_agent 下拉字段" };
+    }
+    if (!userAgentField.options.some((option) => option.headers && Object.keys(option.headers).length > 0)) {
+      return { valid: false, message: "该实验模板尚未配置完整：user_agent 选项缺少 headers 映射" };
+    }
   }
 
   const importConfig = experimentDetail?.import_config;
@@ -686,36 +755,13 @@ function validateTemplateConfiguration(experimentDetail) {
 }
 
 function applyTemplateSchemaDefaults(schemaValue) {
-  const schema = schemaValue && typeof schemaValue === "object" ? schemaValue : {};
-  const fields = Array.isArray(schema?.fields) ? schema.fields : [];
-  templateForm.target_url = "";
-  templateForm.user_agent = "";
-  templateForm.preview_count = null;
-  fieldPlaceholders.target_url = "";
-  fieldPlaceholders.user_agent = "请选择";
-  fieldPlaceholders.preview_count = "";
-  userAgentOptions.value = [];
+  const fields = extractTemplateFields(schemaValue);
+  templateFields.value = fields;
+  Object.keys(templateForm).forEach((key) => {
+    delete templateForm[key];
+  });
   for (const field of fields) {
-    if (!field || typeof field !== "object") continue;
-    const fieldName = field.name;
-    if (!(fieldName in templateForm)) continue;
-    if (typeof field.placeholder === "string" && field.placeholder.trim()) {
-      fieldPlaceholders[fieldName] = field.placeholder.trim();
-    }
-    if (field.default !== undefined && field.default !== null) {
-      if (fieldName === "preview_count") {
-        const defaultNumber = Number(field.default);
-        if (Number.isFinite(defaultNumber)) {
-          templateForm.preview_count = defaultNumber;
-        }
-      } else if (typeof field.default === "string") {
-        templateForm[fieldName] = field.default;
-      }
-    }
-    if (fieldName === "user_agent" && Array.isArray(field.options)) {
-      const normalizedOptions = field.options.map(normalizeUserAgentOption).filter(Boolean);
-      userAgentOptions.value = normalizedOptions;
-    }
+    templateForm[field.name] = resolveTemplateFieldDefaultValue(field);
   }
 }
 
@@ -729,6 +775,7 @@ function applyImportConfig(configValue) {
   optionalImports.value = optional.map(normalizeOptionalImportOption).filter(Boolean);
   allowCustomImport.value = config.allow_custom_import === true;
   selectedOptionalImports.value = [];
+  customImportText.value = "";
 }
 
 async function buildImportStatements() {
@@ -832,18 +879,64 @@ function ensureTemplateActionsAllowed() {
   return false;
 }
 
+function escapeRegExp(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function replaceTemplateToken(sourceCode, key, value) {
+  if (!key) {
+    return sourceCode;
+  }
+  const pattern = new RegExp(`\\{\\{\\s*${escapeRegExp(key)}\\s*\\}\\}`, "g");
+  return sourceCode.replace(pattern, value);
+}
+
+function serializeTemplateFieldValue(field, rawValue) {
+  const textValue = String(rawValue ?? "").trim();
+  if (!textValue) {
+    return "";
+  }
+  if (field.type === "number") {
+    const numericValue = Number(textValue);
+    return Number.isFinite(numericValue) ? String(numericValue) : "";
+  }
+  return escapePyString(textValue);
+}
+
+function validateTemplateFormValues() {
+  for (const field of templateFields.value) {
+    const textValue = resolveTemplateFieldTextValue(field);
+    if (field.required && !textValue) {
+      throw new Error(`${field.label}不能为空`);
+    }
+    if (field.type === "number" && textValue) {
+      const numericValue = Number(textValue);
+      if (!Number.isFinite(numericValue)) {
+        throw new Error(`${field.label}必须是数字`);
+      }
+      if (field.min !== null && numericValue < field.min) {
+        throw new Error(`${field.label}不能小于 ${field.min}`);
+      }
+      if (field.max !== null && numericValue > field.max) {
+        throw new Error(`${field.label}不能大于 ${field.max}`);
+      }
+    }
+    if (field.type === "select" && textValue && field.options.length > 0 && !field.options.some((item) => item.value === textValue)) {
+      throw new Error(`${field.label}选择值无效，请重新选择`);
+    }
+  }
+}
+
 function applyTemplateValue(templateCode, importStatements) {
-  const safePreviewCount = Math.floor(Number(templateForm.preview_count));
   const importBlock = importStatements.join("\n");
-  const headersBlock = resolveHeadersBlock();
-  const selectedUserAgent = resolveSelectedUserAgentValue();
   let code = normalizeLegacyHeadersTemplate(templateCode);
-  code = code.replace(/{{target_url}}/g, escapePyString(templateForm.target_url || ""));
-  code = code.replace(/{{headers_block}}/g, headersBlock);
-  code = code.replace(/{{user_agent}}/g, escapePyString(selectedUserAgent));
-  code = code.replace(/{{preview_count}}/g, String(safePreviewCount));
-  if (code.includes("{{imports}}")) {
-    code = code.replace(/{{imports}}/g, importBlock);
+  for (const field of templateFields.value) {
+    code = replaceTemplateToken(code, field.name, serializeTemplateFieldValue(field, resolveTemplateFieldRawValue(field)));
+  }
+  code = replaceTemplateToken(code, "headers_block", resolveHeadersBlock());
+  code = replaceTemplateToken(code, "user_agent", escapePyString(resolveSelectedUserAgentValue()));
+  if (/\{\{\s*imports\s*\}\}/.test(code)) {
+    code = replaceTemplateToken(code, "imports", importBlock);
   } else {
     code = `${importBlock}\n\n${code}`;
   }
@@ -857,15 +950,7 @@ async function applyTemplateToCode() {
     if (!ensureTemplateActionsAllowed()) {
       return;
     }
-    if (!templateForm.target_url.trim()) {
-      throw new Error("目标网址不能为空");
-    }
-    if (!templateForm.user_agent.trim()) {
-      throw new Error("请选择请求头模板");
-    }
-    if (!Number.isFinite(Number(templateForm.preview_count)) || Number(templateForm.preview_count) <= 0) {
-      throw new Error("展示条数必须是大于 0 的数字");
-    }
+    validateTemplateFormValues();
     if (!hasEditorContent.value) {
       throw new Error("请先点击“加载骨架模板代码”或“恢复默认骨架模板代码”");
     }
@@ -984,14 +1069,11 @@ async function loadExperimentAndCode() {
   message.value = "";
   templateError.value = "";
   templateMessage.value = "";
-  templateForm.target_url = "";
-  templateForm.user_agent = "";
-  templateForm.preview_count = null;
+  Object.keys(templateForm).forEach((key) => {
+    delete templateForm[key];
+  });
+  templateFields.value = [];
   originalTemplateCode.value = "";
-  userAgentOptions.value = [];
-  fieldPlaceholders.target_url = "";
-  fieldPlaceholders.user_agent = "请选择";
-  fieldPlaceholders.preview_count = "";
   fixedImports.value = [];
   optionalImports.value = [];
   allowCustomImport.value = false;
@@ -1475,8 +1557,9 @@ onBeforeUnmount(() => {
 .params-grid {
   margin-top: 10px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 10px;
+  align-items: start;
 }
 
 .field {
@@ -1487,6 +1570,8 @@ onBeforeUnmount(() => {
 .field span {
   font-size: 14px;
   color: var(--text-muted);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .field input,
@@ -1503,7 +1588,7 @@ onBeforeUnmount(() => {
 .imports-wrap {
   margin-top: 12px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 10px;
 }
 
