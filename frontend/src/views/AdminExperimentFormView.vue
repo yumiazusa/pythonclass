@@ -132,6 +132,9 @@
           {{ isLoading ? "保存中..." : isEditMode ? "保存修改" : "创建实验" }}
         </button>
       </div>
+      <p v-if="actionMessage" :class="['submit-feedback', actionError ? 'error-text' : 'success-text']">
+        {{ actionMessage }}
+      </p>
     </article>
   </section>
 </template>
@@ -276,6 +279,15 @@ function goBack() {
   router.push("/admin/experiments");
 }
 
+function resolveErrorMessage(error, fallback = "保存失败，请稍后重试") {
+  return (
+    error?.response?.data?.detail ||
+    error?.response?.data?.message ||
+    error?.message ||
+    fallback
+  );
+}
+
 async function handleSubmit() {
   actionMessage.value = "";
   actionError.value = false;
@@ -308,7 +320,10 @@ async function handleSubmit() {
   isLoading.value = true;
   try {
     if (isEditMode.value) {
-      await updateAdminExperiment(experimentId.value, payload);
+      const updated = await updateAdminExperiment(experimentId.value, payload);
+      if (updated && typeof updated === "object") {
+        applyDetail(updated);
+      }
       actionMessage.value = "实验更新成功";
     } else {
       const created = await createAdminExperiment(payload);
@@ -316,9 +331,8 @@ async function handleSubmit() {
       await router.replace(`/admin/experiments/${created.experiment_id}/edit`);
       return;
     }
-    await loadDetail();
   } catch (error) {
-    actionMessage.value = `保存失败：${error.message}`;
+    actionMessage.value = `保存失败：${resolveErrorMessage(error)}`;
     actionError.value = true;
   } finally {
     isLoading.value = false;
@@ -407,6 +421,12 @@ onMounted(() => {
   gap: 10px;
 }
 
+.submit-feedback {
+  margin: 10px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .btn {
   border: 0;
   border-radius: 8px;
@@ -448,6 +468,14 @@ onMounted(() => {
   border-color: var(--success-border);
   background: var(--success-soft);
   color: var(--success-strong);
+}
+
+.success-text {
+  color: var(--success-strong);
+}
+
+.error-text {
+  color: var(--danger-strong);
 }
 
 @media (max-width: 960px) {
