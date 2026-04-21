@@ -150,6 +150,9 @@ async function handleLogout() {
   hasToken.value = false;
   closeMenus();
   closeMobileNav();
+  if (typeof window !== "undefined") {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }
   if (route.path !== "/login") {
     await router.replace("/login");
   }

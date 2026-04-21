@@ -20,11 +20,17 @@ export function normalizeRunResult(payload) {
   const success = typeof payload.success === "boolean" ? payload.success : status === "completed";
   const executionTimeMsRaw = Number(payload.execution_time_ms);
   const executionTimeMs = Number.isFinite(executionTimeMsRaw) ? Math.max(0, Math.floor(executionTimeMsRaw)) : 0;
+  const imageBase64 = typeof payload.image_base64 === "string" && payload.image_base64 ? payload.image_base64 : null;
+  const imagesBase64 = Array.isArray(payload.images_base64)
+    ? payload.images_base64.filter((item) => typeof item === "string" && item)
+    : [];
   return {
     success,
     status,
     stdout,
     stderr,
+    image_base64: imageBase64,
+    images_base64: imagesBase64,
     returncode: Number.isInteger(payload.returncode) ? payload.returncode : null,
     timed_out: Boolean(payload.timed_out),
     execution_time_ms: executionTimeMs,
