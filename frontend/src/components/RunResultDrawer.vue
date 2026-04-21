@@ -79,8 +79,11 @@
 
           <article class="content-card">
             <h4>图表（image）</h4>
-            <div v-if="chartImageSrc" class="chart-wrap">
-              <img :src="chartImageSrc" alt="运行生成图表" />
+            <div v-if="chartImageList.length" class="chart-list">
+              <figure v-for="(src, idx) in chartImageList" :key="`${idx}-${src.slice(0, 24)}`" class="chart-wrap">
+                <img :src="src" :alt="`运行生成图表 ${idx + 1}`" />
+                <figcaption>图 {{ idx + 1 }}</figcaption>
+              </figure>
             </div>
             <p v-else class="empty-text">当前运行结果未返回图表图片。</p>
           </article>
@@ -362,27 +365,37 @@ function isTableLikeParsed(parsed) {
   return Boolean(parsed && typeof parsed === "object");
 }
 
+function stripTaggedTableLines(value) {
+  if (typeof value !== "string" || !value) {
+    return "";
+  }
+  const markerList = ["__TABLE_JSON__=", "__TABLE_JSON__:", "__TABLE_DATA__=", "__TABLE_DATA__:"];
+  const cleaned = value
+    .split(/\r?\n/)
+    .filter((line) => !markerList.some((marker) => line.includes(marker)))
+    .join("\n")
+    .trimEnd();
+  return cleaned;
+}
+
 const stdoutText = computed(() => {
   const text = rawStdout.value;
   if (!text) {
     return "（空）";
   }
-  const tagged = extractTaggedTablePayload(text);
-  if (tagged && isTableLikeParsed(tagged.parsed)) {
-    const before = text.slice(0, tagged.start).trimEnd();
-    const after = text.slice(tagged.end).trim();
-    const merged = [before, after].filter(Boolean).join("\n");
-    return merged || "（空）";
+  const textWithoutTaggedRows = stripTaggedTableLines(text);
+  if (!textWithoutTaggedRows) {
+    return "（空）";
   }
-  const extracted = extractLastJsonPayload(text);
+  const extracted = extractLastJsonPayload(textWithoutTaggedRows);
   if (!extracted || !isTableLikeParsed(extracted.parsed)) {
-    return text || "（空）";
+    return textWithoutTaggedRows || "（空）";
   }
-  const isTailPayload = extracted.end >= text.trimEnd().length;
+  const isTailPayload = extracted.end >= textWithoutTaggedRows.trimEnd().length;
   if (!isTailPayload) {
-    return text || "（空）";
+    return textWithoutTaggedRows || "（空）";
   }
-  const cleaned = text.slice(0, extracted.start).trimEnd();
+  const cleaned = textWithoutTaggedRows.slice(0, extracted.start).trimEnd();
   return cleaned || "（空）";
 });
 
@@ -405,8 +418,7 @@ const tableColumns = computed(() => {
 
 const hasTableData = computed(() => tableRows.value.length > 0 && tableColumns.value.length > 0);
 
-const chartImageSrc = computed(() => {
-  const raw = props.result?.image || props.result?.image_url || props.result?.image_base64 || props.result?.plot_image || "";
+function normalizeImageSrc(raw) {
   if (!raw || typeof raw !== "string") {
     return "";
   }
@@ -417,6 +429,19 @@ const chartImageSrc = computed(() => {
     return raw;
   }
   return `data:image/png;base64,${raw}`;
+}
+
+const chartImageList = computed(() => {
+  const imageListRaw = props.result?.images_base64;
+  if (Array.isArray(imageListRaw)) {
+    const normalizedList = imageListRaw.map(normalizeImageSrc).filter(Boolean);
+    if (normalizedList.length > 0) {
+      return normalizedList;
+    }
+  }
+  const singleRaw = props.result?.image || props.result?.image_url || props.result?.image_base64 || props.result?.plot_image || "";
+  const singleSrc = normalizeImageSrc(singleRaw);
+  return singleSrc ? [singleSrc] : [];
 });
 
 const errorText = computed(() => {
@@ -712,9 +737,20 @@ onBeforeUnmount(() => {
   text-align: center;
 }
 
+.chart-list {
+  display: grid;
+  gap: 10px;
+}
+
 .chart-wrap img {
   max-width: 100%;
   height: auto;
+}
+
+.chart-wrap figcaption {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text-subtle);
 }
 
 .error-card {

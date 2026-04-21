@@ -46,6 +46,33 @@
               <option value="">{{ field.placeholder || "请选择" }}</option>
               <option v-for="item in field.options" :key="`${field.name}-${item.value}`" :value="item.value">{{ item.label }}</option>
             </select>
+            <div v-else-if="field.type === 'password'" class="password-input-wrap">
+              <input
+                v-model="templateForm[field.name]"
+                :type="isTemplatePasswordVisible(field.name) ? 'text' : 'password'"
+                :placeholder="field.placeholder"
+                :disabled="isBusy || !canTemplateActions"
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                :disabled="isBusy || !canTemplateActions"
+                :aria-label="isTemplatePasswordVisible(field.name) ? '隐藏密码' : '显示密码'"
+                :title="isTemplatePasswordVisible(field.name) ? '隐藏密码' : '显示密码'"
+                @click.prevent="toggleTemplatePasswordVisibility(field.name)"
+              >
+                <svg v-if="isTemplatePasswordVisible(field.name)" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M12 5.5c5.7 0 9.8 3.6 11 8.3a1 1 0 0 1 0 .4c-1.2 4.7-5.3 8.3-11 8.3S2.2 19 1 14.2a1 1 0 0 1 0-.4C2.2 9.1 6.3 5.5 12 5.5Zm0 2c-4.6 0-7.8 3-8.9 6.5 1.1 3.5 4.3 6.5 8.9 6.5 4.6 0 7.8-3 8.9-6.5-1.1-3.5-4.3-6.5-8.9-6.5Zm0 2.5a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"
+                  />
+                </svg>
+                <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M3 3.7 20.3 21l-1.4 1.4-3.1-3.1A12.9 12.9 0 0 1 12 20.5C6.3 20.5 2.2 17 1 12.2a1 1 0 0 1 0-.4 10.9 10.9 0 0 1 5.4-6.7L1.6 4.4 3 3.7Zm6.2 6.2a3.9 3.9 0 0 0 5 5l-5-5Zm2.8-6.4c5.7 0 9.8 3.6 11 8.3a1 1 0 0 1 0 .4 11 11 0 0 1-5.6 6.8l-1.5-1.5a9.1 9.1 0 0 0 5-5.5c-1.1-3.5-4.3-6.5-8.9-6.5a9 9 0 0 0-3.8.8L6.8 4.8a11 11 0 0 1 5.2-1.3Zm-.1 3.1a5.9 5.9 0 0 1 5.9 5.9c0 .8-.2 1.6-.5 2.3l-1.6-1.6a3.9 3.9 0 0 0-5.1-5.1L9 6.6c.7-.3 1.5-.5 2.8-.5Z"
+                  />
+                </svg>
+              </button>
+            </div>
             <textarea
               v-else-if="field.type === 'textarea'"
               v-model="templateForm[field.name]"
@@ -238,6 +265,7 @@ const router = useRouter();
 const currentViewer = getStoredCurrentUser() || {};
 const viewerRole = ref(currentViewer?.role || localStorage.getItem("role") || "");
 const runResultOwnerKey = String(currentViewer?.id || currentViewer?.username || "anonymous");
+const templateStateStorageNamespace = "edu:guided-template:state";
 const runOwnerLabel = computed(() => {
   const roleText = viewerRole.value === "admin" ? "管理员" : viewerRole.value === "teacher" ? "教师" : "学生";
   const name = currentViewer?.full_name || currentViewer?.username || "当前用户";
@@ -285,6 +313,7 @@ const optionalImports = ref([]);
 const selectedOptionalImports = ref([]);
 const allowCustomImport = ref(false);
 const customImportText = ref("");
+const templatePasswordVisibleMap = reactive({});
 
 const workspaceStatus = ref({
   experiment_id: null,
@@ -320,6 +349,9 @@ const experimentId = computed(() => parseExperimentId(route.query.experiment_id)
 const hasValidExperimentId = computed(() => experimentId.value > 0);
 const runResultStorageKey = computed(() =>
   hasValidExperimentId.value ? `${runResultStorageNamespace}:${runResultOwnerKey}:${experimentId.value}` : "",
+);
+const templateStateStorageKey = computed(() =>
+  hasValidExperimentId.value ? `${templateStateStorageNamespace}:${runResultOwnerKey}:${experimentId.value}` : "",
 );
 const isAdminViewer = computed(() => viewerRole.value === "admin");
 const experimentTitle = computed(() => experiment.value?.title || "引导式模板实验");
@@ -628,6 +660,29 @@ function normalizeTemplateField(field) {
   const numberMin = Number(field.min);
   const numberMax = Number(field.max);
   const numberStep = Number(field.step);
+  let resolvedStep = Number.isFinite(numberStep) && numberStep > 0 ? numberStep : null;
+  if (rawType === "number" && resolvedStep === null) {
+    const candidates = [field.min, field.max, field.default];
+    let maxDecimalPlaces = 0;
+    for (const item of candidates) {
+      if (item === null || item === undefined || item === "") {
+        continue;
+      }
+      const text = String(item).trim();
+      if (!text || /e/i.test(text)) {
+        continue;
+      }
+      const dotIndex = text.indexOf(".");
+      if (dotIndex < 0) {
+        continue;
+      }
+      const decimalPart = text.slice(dotIndex + 1).replace(/0+$/, "");
+      if (decimalPart.length > maxDecimalPlaces) {
+        maxDecimalPlaces = decimalPart.length;
+      }
+    }
+    resolvedStep = maxDecimalPlaces > 0 ? 10 ** -Math.min(maxDecimalPlaces, 6) : 1;
+  }
   return {
     name,
     label,
@@ -639,7 +694,7 @@ function normalizeTemplateField(field) {
     defaultValue: hasDefault ? field.default : "",
     min: Number.isFinite(numberMin) ? numberMin : null,
     max: Number.isFinite(numberMax) ? numberMax : null,
-    step: Number.isFinite(numberStep) ? numberStep : null,
+    step: resolvedStep,
   };
 }
 
@@ -650,9 +705,18 @@ function extractTemplateFields(schemaValue) {
 }
 
 function resolveInputType(field) {
-  if (field?.type === "password") return "password";
   if (field?.type === "number") return "number";
   return "text";
+}
+
+function isTemplatePasswordVisible(fieldName) {
+  return Boolean(templatePasswordVisibleMap[String(fieldName || "")]);
+}
+
+function toggleTemplatePasswordVisibility(fieldName) {
+  const key = String(fieldName || "");
+  if (!key) return;
+  templatePasswordVisibleMap[key] = !templatePasswordVisibleMap[key];
 }
 
 function resolveTemplateFieldDefaultValue(field) {
@@ -761,6 +825,9 @@ function applyTemplateSchemaDefaults(schemaValue) {
   Object.keys(templateForm).forEach((key) => {
     delete templateForm[key];
   });
+  Object.keys(templatePasswordVisibleMap).forEach((key) => {
+    delete templatePasswordVisibleMap[key];
+  });
   for (const field of fields) {
     templateForm[field.name] = resolveTemplateFieldDefaultValue(field);
   }
@@ -864,6 +931,79 @@ function saveRunResultSnapshot(nextResult) {
   }
 }
 
+function buildTemplateStateSnapshot() {
+  const form = {};
+  for (const field of templateFields.value) {
+    form[field.name] = String(templateForm[field.name] ?? "");
+  }
+  return {
+    form,
+    selected_optional_imports: [...selectedOptionalImports.value],
+    custom_import_text: allowCustomImport.value ? String(customImportText.value || "") : "",
+  };
+}
+
+function applyTemplateStateSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== "object") {
+    return;
+  }
+  const form = snapshot.form && typeof snapshot.form === "object" ? snapshot.form : {};
+  for (const field of templateFields.value) {
+    if (!Object.prototype.hasOwnProperty.call(form, field.name)) {
+      continue;
+    }
+    const value = String(form[field.name] ?? "").trim();
+    if (field.type === "select") {
+      if (!value || field.options.some((item) => item.value === value)) {
+        templateForm[field.name] = value;
+      }
+      continue;
+    }
+    templateForm[field.name] = value;
+  }
+  const nextOptional = Array.isArray(snapshot.selected_optional_imports) ? snapshot.selected_optional_imports : [];
+  const optionalSet = new Set(optionalImports.value);
+  selectedOptionalImports.value = nextOptional
+    .map((item) => String(item || "").trim())
+    .filter((item) => item && optionalSet.has(item));
+  if (allowCustomImport.value) {
+    customImportText.value = String(snapshot.custom_import_text || "");
+  }
+}
+
+function restoreTemplateStateSnapshot() {
+  if (!templateStateStorageKey.value || typeof window === "undefined") {
+    return;
+  }
+  try {
+    const raw = window.localStorage.getItem(templateStateStorageKey.value);
+    if (!raw) {
+      return;
+    }
+    const parsed = JSON.parse(raw);
+    applyTemplateStateSnapshot(parsed?.state);
+  } catch (_error) {
+    // ignore storage parse errors
+  }
+}
+
+function saveTemplateStateSnapshot(snapshot = buildTemplateStateSnapshot()) {
+  if (!templateStateStorageKey.value || typeof window === "undefined" || !snapshot || typeof snapshot !== "object") {
+    return;
+  }
+  try {
+    window.localStorage.setItem(
+      templateStateStorageKey.value,
+      JSON.stringify({
+        saved_at: new Date().toISOString(),
+        state: snapshot,
+      }),
+    );
+  } catch (_error) {
+    // ignore storage write errors
+  }
+}
+
 function ensureTemplateActionsAllowed() {
   if (canTemplateActions.value) {
     return true;
@@ -890,6 +1030,18 @@ function replaceTemplateToken(sourceCode, key, value) {
   }
   const pattern = new RegExp(`\\{\\{\\s*${escapeRegExp(key)}\\s*\\}\\}`, "g");
   return sourceCode.replace(pattern, value);
+}
+
+function hasAnyTemplateToken(sourceCode) {
+  const text = String(sourceCode || "");
+  if (!text) {
+    return false;
+  }
+  const tokenKeys = ["imports", "headers_block", "user_agent", ...templateFields.value.map((field) => field.name)];
+  return tokenKeys.some((key) => {
+    const pattern = new RegExp(`\\{\\{\\s*${escapeRegExp(key)}\\s*\\}\\}`);
+    return pattern.test(text);
+  });
 }
 
 function serializeTemplateFieldValue(field, rawValue) {
@@ -956,9 +1108,21 @@ async function applyTemplateToCode() {
       throw new Error("请先点击“加载骨架模板代码”或“恢复默认骨架模板代码”");
     }
     const imports = await buildImportStatements();
-    const generatedCode = applyTemplateValue(currentCode.value, imports);
+    let baseCode = currentCode.value;
+    let useSkeletonFallback = false;
+    if (!hasAnyTemplateToken(baseCode)) {
+      const skeletonCode = getTemplateContent();
+      if (!skeletonCode.trim()) {
+        throw new Error("当前代码缺少模板占位符，且未找到可用骨架模板代码");
+      }
+      baseCode = skeletonCode;
+      useSkeletonFallback = true;
+    }
+    const generatedCode = applyTemplateValue(baseCode, imports);
     setEditorValue(generatedCode, { markAsSaved: false });
-    templateMessage.value = "参数与导入库已应用到代码，可继续手动修改后运行/保存/提交。";
+    templateMessage.value = useSkeletonFallback
+      ? "当前代码中未检测到模板占位符，已基于骨架模板重新应用参数。"
+      : "参数与导入库已应用到代码，可继续手动修改后运行/保存/提交。";
   } catch (error) {
     templateError.value = error.message || "应用参数失败";
   }
@@ -1131,6 +1295,7 @@ async function loadExperimentAndCode() {
     originalTemplateCode.value = detail.code_template || "";
     applyTemplateSchemaDefaults(detail.template_schema);
     applyImportConfig(detail.import_config);
+    restoreTemplateStateSnapshot();
 
     const workspace = await getWorkspaceStatus(experimentId.value);
     updateWorkspaceStatus(workspace);
@@ -1268,6 +1433,7 @@ async function handleSave() {
   }
   isSaving.value = true;
   message.value = "";
+  const templateStateBeforeSave = buildTemplateStateSnapshot();
   try {
     const saved = await saveSubmission(buildSubmissionPayload());
     lastSavedCode.value = currentCode.value;
@@ -1275,6 +1441,8 @@ async function handleSave() {
     updateLoadedSubmissionMeta(saved, "draft");
     updateLatestSubmissionMeta(saved);
     await refreshLatestAndHistory({ updateLoadedFromLatest: true });
+    applyTemplateStateSnapshot(templateStateBeforeSave);
+    saveTemplateStateSnapshot(templateStateBeforeSave);
     message.value = `草稿保存成功，当前版本 ${currentVersionText.value}`;
   } catch (error) {
     message.value = `保存失败：${error.message}`;
@@ -1306,6 +1474,7 @@ async function handleSubmit() {
   }
   isSubmitting.value = true;
   message.value = "";
+  const templateStateBeforeSubmit = buildTemplateStateSnapshot();
   try {
     const submission = await submitSubmission(buildSubmissionPayload());
     lastSavedCode.value = currentCode.value;
@@ -1313,6 +1482,8 @@ async function handleSubmit() {
     updateLoadedSubmissionMeta(submission, "submitted");
     updateLatestSubmissionMeta(submission);
     await refreshLatestAndHistory({ updateLoadedFromLatest: true });
+    applyTemplateStateSnapshot(templateStateBeforeSubmit);
+    saveTemplateStateSnapshot(templateStateBeforeSubmit);
     message.value = `已正式提交，当前版本 ${currentVersionText.value}`;
   } catch (error) {
     message.value = `提交失败：${error.message}`;
@@ -1584,6 +1755,68 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   padding: 8px 10px;
   font-family: inherit;
+}
+
+.field input:not([type="checkbox"]):not([type="radio"]),
+.field select {
+  height: 42px;
+  min-height: 42px;
+  padding: 0 10px;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.field textarea {
+  min-height: 120px;
+  padding: 10px 12px;
+  line-height: 1.5;
+}
+
+.password-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.password-input-wrap input {
+  padding-right: 44px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface-1);
+  color: var(--text-strong);
+  cursor: pointer;
+  padding: 0;
+  transition: none !important;
+}
+
+.password-toggle svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.password-toggle:hover,
+.password-toggle:focus,
+.password-toggle:active {
+  transform: translateY(-50%) !important;
+  transition: none !important;
+}
+
+.password-toggle:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .imports-wrap {

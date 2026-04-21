@@ -15,6 +15,8 @@ class CodeRunResponse(BaseModel):
     status: CodeRunStatus
     stdout: str
     stderr: str
+    image_base64: str | None = None
+    images_base64: list[str] | None = None
     returncode: int | None
     timed_out: bool
     execution_time_ms: int
