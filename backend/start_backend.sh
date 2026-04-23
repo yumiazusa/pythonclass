@@ -14,6 +14,8 @@ set -eu
 PORT="${1:-8081}"
 HOST="${2:-0.0.0.0}"
 APP_MODULE="${3:-app.main:app}"
+APP_ENV="${APP_ENV:-development}"
+UVICORN_WORKERS="${UVICORN_WORKERS:-2}"
 
 if [ ! -d "app" ]; then
   echo "请在 backend 目录执行该脚本。当前目录: $(pwd)"
@@ -43,6 +45,13 @@ else
   echo "[start_backend] 未找到 fuser/lsof，跳过自动释放端口。"
 fi
 
-echo "[start_backend] 启动服务: python3 -m uvicorn ${APP_MODULE} --reload --host ${HOST} --port ${PORT}"
-exec python3 -m uvicorn "${APP_MODULE}" --reload --host "${HOST}" --port "${PORT}"
-
+if [ "${APP_ENV}" = "production" ]; then
+  if [ "${UVICORN_WORKERS}" -lt 1 ] 2>/dev/null; then
+    UVICORN_WORKERS=1
+  fi
+  echo "[start_backend] 生产模式启动: python3 -m uvicorn ${APP_MODULE} --host ${HOST} --port ${PORT} --workers ${UVICORN_WORKERS}"
+  exec python3 -m uvicorn "${APP_MODULE}" --host "${HOST}" --port "${PORT}" --workers "${UVICORN_WORKERS}"
+else
+  echo "[start_backend] 开发模式启动: python3 -m uvicorn ${APP_MODULE} --reload --host ${HOST} --port ${PORT}"
+  exec python3 -m uvicorn "${APP_MODULE}" --reload --host "${HOST}" --port "${PORT}"
+fi

@@ -2,6 +2,7 @@ import ast
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from pathlib import Path
 
@@ -187,6 +188,10 @@ except Exception:
     pass
 """
 
+_RUN_SEMAPHORE: threading.BoundedSemaphore | None = None
+_RUN_SEMAPHORE_LIMIT: int | None = None
+_RUN_SEMAPHORE_LOCK = threading.Lock()
+
 
 def _check_blocked(code: str) -> str | None:
     try:
@@ -261,6 +266,16 @@ def _extract_images_from_stdout(stdout: str) -> tuple[str, list[str]]:
     return cleaned_stdout, image_base64_list
 
 
+def _get_run_semaphore(concurrency_limit: int) -> threading.BoundedSemaphore:
+    global _RUN_SEMAPHORE, _RUN_SEMAPHORE_LIMIT
+    limit = max(1, int(concurrency_limit))
+    with _RUN_SEMAPHORE_LOCK:
+        if _RUN_SEMAPHORE is None or _RUN_SEMAPHORE_LIMIT != limit:
+            _RUN_SEMAPHORE = threading.BoundedSemaphore(value=limit)
+            _RUN_SEMAPHORE_LIMIT = limit
+        return _RUN_SEMAPHORE
+
+
 def run_python_code(code: str) -> CodeRunResponse:
     settings = get_settings()
     block_reason = _check_blocked(code)
@@ -275,6 +290,24 @@ def run_python_code(code: str) -> CodeRunResponse:
             execution_time_ms=0,
             blocked=True,
             block_reason=block_reason,
+        )
+
+    run_semaphore = _get_run_semaphore(settings.code_run_concurrency_limit)
+    queue_wait_seconds = max(1, int(settings.code_run_queue_wait_seconds))
+    acquired = run_semaphore.acquire(timeout=queue_wait_seconds)
+    if not acquired:
+        return CodeRunResponse(
+            success=False,
+            status="internal_error",
+            stdout="",
+            stderr=f"当前运行任务较多，请稍后重试（排队超过 {queue_wait_seconds} 秒）",
+            image_base64=None,
+            images_base64=None,
+            returncode=None,
+            timed_out=False,
+            execution_time_ms=0,
+            blocked=False,
+            block_reason=None,
         )
 
     temp_dir = Path(settings.code_run_temp_dir)
@@ -361,3 +394,5 @@ def run_python_code(code: str) -> CodeRunResponse:
     finally:
         if temp_file_path:
             Path(temp_file_path).unlink(missing_ok=True)
+        if acquired:
+            run_semaphore.release()
