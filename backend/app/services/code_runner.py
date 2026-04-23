@@ -1,9 +1,12 @@
 import ast
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
 import threading
 import time
+import uuid
 from pathlib import Path
 
 from app.core.config import get_settings
@@ -315,6 +318,7 @@ def run_python_code(code: str) -> CodeRunResponse:
 
     start_time = time.perf_counter()
     temp_file_path = ""
+    mpl_config_dir = None
     try:
         with tempfile.NamedTemporaryFile(
             mode="w",
@@ -326,11 +330,19 @@ def run_python_code(code: str) -> CodeRunResponse:
             temp_file.write(_inject_plot_capture(code))
             temp_file_path = temp_file.name
 
+        # Use an isolated matplotlib cache/config dir per run to avoid
+        # font_manager lock conflicts under high concurrency.
+        mpl_config_dir = temp_dir / "mplconfig" / f"{uuid.uuid4().hex}"
+        mpl_config_dir.mkdir(parents=True, exist_ok=True)
+        run_env = os.environ.copy()
+        run_env["MPLCONFIGDIR"] = str(mpl_config_dir)
+
         completed_process = subprocess.run(
             [sys.executable, temp_file_path],
             capture_output=True,
             text=True,
             timeout=settings.code_run_timeout_seconds,
+            env=run_env,
         )
         elapsed_ms = int((time.perf_counter() - start_time) * 1000)
         stdout_cleaned, image_base64_list = _extract_images_from_stdout(completed_process.stdout or "")
@@ -394,5 +406,7 @@ def run_python_code(code: str) -> CodeRunResponse:
     finally:
         if temp_file_path:
             Path(temp_file_path).unlink(missing_ok=True)
+        if mpl_config_dir:
+            shutil.rmtree(mpl_config_dir, ignore_errors=True)
         if acquired:
             run_semaphore.release()
