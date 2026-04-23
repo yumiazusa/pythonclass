@@ -17,7 +17,9 @@ class Settings(BaseSettings):
     jwt_secret_key: str = "please-change-this-secret"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
-    code_run_timeout_seconds: int = 15
+    code_run_timeout_seconds: int = 60
+    code_run_concurrency_limit: int = 8
+    code_run_queue_wait_seconds: int = 300
     code_run_max_output_chars: int = 20000
     code_run_temp_dir: str = "/tmp/edu_code_runner"
     cors_allow_origins: str = "*"
