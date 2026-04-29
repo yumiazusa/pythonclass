@@ -10,6 +10,8 @@ ALLOWED_IMPORT_MODULES = {
     "seaborn",
     "sklearn",
     "statsmodels",
+    "mlxtend",
+    "mlxtend.frequent_patterns",
     "pymysql",
     "sqlalchemy",
     "json",

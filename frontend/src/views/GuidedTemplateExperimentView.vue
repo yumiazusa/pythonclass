@@ -134,7 +134,24 @@
           <button class="btn plain" :disabled="isBusy || !canTemplateActions" @click="clearEditorCode">清空骨架模板代码</button>
           <button class="btn plain" :disabled="isBusy || !canTemplateActions" @click="restoreDefaultSkeleton">恢复默认骨架模板代码</button>
           <button class="btn primary" :disabled="isBusy || !canTemplateActions" @click="applyTemplateToCode">应用参数到代码</button>
+          <button
+            v-if="isAdminViewer"
+            class="btn plain"
+            :disabled="isBusy || !hasValidExperimentId"
+            @click="handleSaveAdminTestDraft"
+          >
+            保存测试草稿
+          </button>
+          <button
+            v-if="isAdminViewer"
+            class="btn plain"
+            :disabled="isBusy || !hasValidExperimentId"
+            @click="handleClearAdminTestDraft"
+          >
+            清空测试草稿
+          </button>
         </div>
+        <p v-if="isAdminViewer && adminDraftLastSavedAt" class="hint">上次保存：{{ formatTime(adminDraftLastSavedAt) }}</p>
         <p v-if="templateError" class="tips error-text">{{ templateError }}</p>
         <p v-else-if="templateMessage" class="tips success-text">{{ templateMessage }}</p>
       </article>
@@ -266,6 +283,7 @@ const currentViewer = getStoredCurrentUser() || {};
 const viewerRole = ref(currentViewer?.role || localStorage.getItem("role") || "");
 const runResultOwnerKey = String(currentViewer?.id || currentViewer?.username || "anonymous");
 const templateStateStorageNamespace = "edu:guided-template:state";
+const adminTestDraftStorageNamespace = "admin_experiment_test_draft";
 const runOwnerLabel = computed(() => {
   const roleText = viewerRole.value === "admin" ? "管理员" : viewerRole.value === "teacher" ? "教师" : "学生";
   const name = currentViewer?.full_name || currentViewer?.username || "当前用户";
@@ -333,6 +351,10 @@ const workspaceStatus = ref({
 
 let editorInstance = null;
 let isSyncingEditorValue = false;
+let isInitializingTemplateState = false;
+let isApplyingAdminDraft = false;
+let adminDraftAutoSaveTimer = null;
+const adminDraftLastSavedAt = ref("");
 
 function parseExperimentId(rawValue) {
   const queryId = Number(rawValue);
@@ -352,6 +374,9 @@ const runResultStorageKey = computed(() =>
 );
 const templateStateStorageKey = computed(() =>
   hasValidExperimentId.value ? `${templateStateStorageNamespace}:${runResultOwnerKey}:${experimentId.value}` : "",
+);
+const adminTestDraftStorageKey = computed(() =>
+  hasValidExperimentId.value ? `${adminTestDraftStorageNamespace}:${experimentId.value}` : "",
 );
 const isAdminViewer = computed(() => viewerRole.value === "admin");
 const experimentTitle = computed(() => experiment.value?.title || "引导式模板实验");
@@ -1004,6 +1029,142 @@ function saveTemplateStateSnapshot(snapshot = buildTemplateStateSnapshot()) {
   }
 }
 
+function buildAdminTestDraftSnapshot() {
+  const formValues = {};
+  for (const field of templateFields.value) {
+    formValues[field.name] = String(templateForm[field.name] ?? "");
+  }
+  return {
+    formValues,
+    selectedImports: [...selectedOptionalImports.value],
+    customImports: allowCustomImport.value ? String(customImportText.value || "") : "",
+    editorCode: String(currentCode.value || ""),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function applyAdminTestDraftSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== "object") {
+    return;
+  }
+  isApplyingAdminDraft = true;
+  try {
+    const formValues = snapshot.formValues && typeof snapshot.formValues === "object" ? snapshot.formValues : {};
+    for (const field of templateFields.value) {
+      if (!Object.prototype.hasOwnProperty.call(formValues, field.name)) {
+        continue;
+      }
+      const value = String(formValues[field.name] ?? "").trim();
+      if (field.type === "select") {
+        if (!value || field.options.some((item) => item.value === value)) {
+          templateForm[field.name] = value;
+        }
+        continue;
+      }
+      templateForm[field.name] = value;
+    }
+
+    const optionalSet = new Set(optionalImports.value);
+    const selectedImports = Array.isArray(snapshot.selectedImports) ? snapshot.selectedImports : [];
+    selectedOptionalImports.value = selectedImports
+      .map((item) => String(item || "").trim())
+      .filter((item) => item && optionalSet.has(item));
+
+    if (allowCustomImport.value) {
+      customImportText.value = String(snapshot.customImports || "");
+    } else {
+      customImportText.value = "";
+    }
+
+    if (typeof snapshot.editorCode === "string" && snapshot.editorCode.length > 0) {
+      setEditorValue(snapshot.editorCode, { markAsSaved: true });
+    }
+  } finally {
+    isApplyingAdminDraft = false;
+  }
+}
+
+function restoreAdminTestDraft() {
+  if (!isAdminViewer.value || !adminTestDraftStorageKey.value || typeof window === "undefined") {
+    return false;
+  }
+  try {
+    const raw = window.localStorage.getItem(adminTestDraftStorageKey.value);
+    if (!raw) {
+      adminDraftLastSavedAt.value = "";
+      return false;
+    }
+    const parsed = JSON.parse(raw);
+    applyAdminTestDraftSnapshot(parsed);
+    adminDraftLastSavedAt.value = parsed?.updatedAt ? String(parsed.updatedAt) : "";
+    return true;
+  } catch (_error) {
+    adminDraftLastSavedAt.value = "";
+    return false;
+  }
+}
+
+function saveAdminTestDraft(options = {}) {
+  const { silent = true } = options;
+  if (!isAdminViewer.value || !adminTestDraftStorageKey.value || typeof window === "undefined") {
+    return false;
+  }
+  try {
+    const snapshot = buildAdminTestDraftSnapshot();
+    window.localStorage.setItem(adminTestDraftStorageKey.value, JSON.stringify(snapshot));
+    adminDraftLastSavedAt.value = snapshot.updatedAt;
+    if (!silent) {
+      templateError.value = "";
+      templateMessage.value = "测试草稿已保存";
+    }
+    return true;
+  } catch (_error) {
+    if (!silent) {
+      templateMessage.value = "";
+      templateError.value = "测试草稿保存失败";
+    }
+    return false;
+  }
+}
+
+function scheduleAdminTestDraftAutoSave() {
+  if (!isAdminViewer.value || !hasValidExperimentId.value || isInitializingTemplateState || isApplyingAdminDraft) {
+    return;
+  }
+  if (adminDraftAutoSaveTimer) {
+    window.clearTimeout(adminDraftAutoSaveTimer);
+  }
+  adminDraftAutoSaveTimer = window.setTimeout(() => {
+    adminDraftAutoSaveTimer = null;
+    saveAdminTestDraft({ silent: true });
+  }, 400);
+}
+
+function handleSaveAdminTestDraft() {
+  saveAdminTestDraft({ silent: false });
+}
+
+function handleClearAdminTestDraft() {
+  if (!isAdminViewer.value || !adminTestDraftStorageKey.value || typeof window === "undefined") {
+    return;
+  }
+  const confirmed = window.confirm("确认清空当前实验的测试草稿吗？将恢复为实验默认配置。");
+  if (!confirmed) {
+    return;
+  }
+  try {
+    window.localStorage.removeItem(adminTestDraftStorageKey.value);
+  } catch (_error) {
+    // ignore storage remove errors
+  }
+  adminDraftLastSavedAt.value = "";
+  applyTemplateSchemaDefaults(experiment.value?.template_schema);
+  applyImportConfig(experiment.value?.import_config);
+  setEditorValue(getTemplateContent(), { markAsSaved: true });
+  templateError.value = "";
+  templateMessage.value = "测试草稿已清空，已恢复默认配置";
+}
+
 function ensureTemplateActionsAllowed() {
   if (canTemplateActions.value) {
     return true;
@@ -1226,6 +1387,7 @@ async function refreshLatestAndHistory(options = {}) {
 }
 
 async function loadExperimentAndCode() {
+  isInitializingTemplateState = true;
   runResult.value = null;
   historyList.value = [];
   historyError.value = "";
@@ -1295,7 +1457,9 @@ async function loadExperimentAndCode() {
     originalTemplateCode.value = detail.code_template || "";
     applyTemplateSchemaDefaults(detail.template_schema);
     applyImportConfig(detail.import_config);
-    restoreTemplateStateSnapshot();
+    if (!isAdminViewer.value) {
+      restoreTemplateStateSnapshot();
+    }
 
     const workspace = await getWorkspaceStatus(experimentId.value);
     updateWorkspaceStatus(workspace);
@@ -1329,6 +1493,12 @@ async function loadExperimentAndCode() {
       message.value = "未检测到历史代码，请先点击“加载骨架模板代码”或“恢复默认骨架模板代码”。";
     }
     setEditorValue(nextCode, { markAsSaved: true });
+    if (isAdminViewer.value) {
+      const restoredAdminDraft = restoreAdminTestDraft();
+      if (restoredAdminDraft) {
+        message.value = message.value ? `${message.value}；已恢复本地测试草稿` : "已恢复本地测试草稿";
+      }
+    }
     const restoredRunResult = restoreRunResultSnapshot();
     if (restoredRunResult) {
       runResult.value = restoredRunResult;
@@ -1352,6 +1522,7 @@ async function loadExperimentAndCode() {
   } finally {
     isAccessCheckLoading.value = false;
     isPageLoading.value = false;
+    isInitializingTemplateState = false;
   }
 }
 
@@ -1598,6 +1769,36 @@ watch(
   { immediate: true },
 );
 
+watch(
+  templateForm,
+  () => {
+    scheduleAdminTestDraftAutoSave();
+  },
+  { deep: true },
+);
+
+watch(
+  () => selectedOptionalImports.value,
+  () => {
+    scheduleAdminTestDraftAutoSave();
+  },
+  { deep: true },
+);
+
+watch(
+  () => customImportText.value,
+  () => {
+    scheduleAdminTestDraftAutoSave();
+  },
+);
+
+watch(
+  () => currentCode.value,
+  () => {
+    scheduleAdminTestDraftAutoSave();
+  },
+);
+
 const handleBeforeUnload = (event) => {
   if (!hasEditorAccess.value) return;
   if (!hasUnsavedChanges.value) return;
@@ -1619,6 +1820,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("beforeunload", handleBeforeUnload);
+  if (adminDraftAutoSaveTimer) {
+    window.clearTimeout(adminDraftAutoSaveTimer);
+    adminDraftAutoSaveTimer = null;
+  }
   destroyEditor();
 });
 </script>
