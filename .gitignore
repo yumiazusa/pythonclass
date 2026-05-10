@@ -12,6 +12,7 @@ env/
 node_modules/
 dist/
 .vite/
+.tools/
 !frontend/dist/
 !frontend/dist/**
 
