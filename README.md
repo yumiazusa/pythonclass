@@ -56,13 +56,13 @@ npm run dev
 ### 仓库准备
 
 1. 确保所有设备都连接同一个 GitHub 仓库。
-2. 所有设备都以 `dev` 作为共享集成分支。
+2. `dev` 用于日常开发，`main` 用于确认版本和服务器拉取。
 3. 把 `README.md`、`AGENTS.md`、`PROJECT_CONTEXT.md` 一起纳入版本控制，作为共享上下文。
 4. `.env`、虚拟环境、`node_modules/` 这类本地文件保持在各自设备上，不要提交。
 
 ### 每台设备的标准流程
 
-1. 开始工作前先同步：
+1. 开始工作前先同步 `dev`：
 
 ```bash
 git checkout dev
@@ -83,7 +83,7 @@ git commit -m "your message"
 git push -u origin codex/<task-name>
 ```
 
-4. 合并前先回到最新 `dev`，避免设备之间互相覆盖。
+4. 功能确认后，把 `dev` 合并到 `main`，再推送 `main` 作为确认版本。
 
 ### 协同约定
 
@@ -91,6 +91,7 @@ git push -u origin codex/<task-name>
 - 先改文档和配置，再动业务代码，便于其他设备快速接手。
 - 如果出现冲突，先以远程 `dev` 的最新状态为准，再在功能分支上解决。
 - 任何不应该共享的本地信息都放进 `.gitignore`，例如数据库密码、API 密钥和临时缓存。
+- 服务器部署只从 `main` 拉取，不直接跟随 `dev`。
 
 更多细节见 [docs/CODEX_COLLABORATION.md](docs/CODEX_COLLABORATION.md)。
 

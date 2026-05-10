@@ -5,7 +5,7 @@
 ## 1. 基本前提
 
 - 这个仓库已经是 Git 仓库，并且已经配置了远程 `origin`。
-- 共享开发分支使用 `dev`。
+- `dev` 用于开发，`main` 用于确认版本和服务器部署。
 - `README.md`、`AGENTS.md`、`PROJECT_CONTEXT.md` 是共享上下文，应该一起维护。
 - `.env`、虚拟环境、依赖缓存、构建产物保持本地化，不要提交。
 
@@ -81,6 +81,15 @@ git pull origin dev
 
 必要时再把自己的功能分支 rebase 或合并到最新 `dev`。
 
+功能确认后，按下面顺序发布到 `main`：
+
+```bash
+git checkout main
+git pull origin main
+git merge dev
+git push origin main
+```
+
 ## 6. 冲突处理
 
 如果冲突发生，推荐顺序是：
@@ -99,5 +108,6 @@ git pull origin dev
 - `AGENTS.md`：设计和协作约束
 - `PROJECT_CONTEXT.md`：长期主上下文
 - `README.md`：启动和协作入口
+- `main`：确认版本，服务器从这里拉取
 
 如果后续增加新的共享规则，优先补到这些文件里，而不是只写在某一台设备的本地笔记中。
