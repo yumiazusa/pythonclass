@@ -58,7 +58,7 @@ python -m app.db.init_db
 ## 启动服务
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8081
 ```
 
 推荐使用一键脚本（自动释放被占用端口后再启动）：
@@ -333,7 +333,7 @@ UPDATE users SET role = 'admin' WHERE username = '你的用户名';
 示例：
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/api/teacher/students/import" \
+curl -X POST "http://127.0.0.1:8081/api/teacher/students/import" \
   -H "Authorization: Bearer <teacher_access_token>" \
   -F "file=@/path/to/students.xlsx"
 ```
@@ -343,7 +343,7 @@ curl -X POST "http://127.0.0.1:8000/api/teacher/students/import" \
 ### 注册
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/api/auth/register" \
+curl -X POST "http://127.0.0.1:8081/api/auth/register" \
   -H "Content-Type: application/json" \
   -d '{
     "username": "student01",
@@ -355,7 +355,7 @@ curl -X POST "http://127.0.0.1:8000/api/auth/register" \
 ### 登录
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/api/auth/login" \
+curl -X POST "http://127.0.0.1:8081/api/auth/login" \
   -H "Content-Type: application/json" \
   -d '{
     "username": "student01",
@@ -366,7 +366,7 @@ curl -X POST "http://127.0.0.1:8000/api/auth/login" \
 ### 获取当前用户
 
 ```bash
-curl -X GET "http://127.0.0.1:8000/api/auth/me" \
+curl -X GET "http://127.0.0.1:8081/api/auth/me" \
   -H "Authorization: Bearer <access_token>"
 ```
 
@@ -375,7 +375,7 @@ curl -X GET "http://127.0.0.1:8000/api/auth/me" \
 ### 教师创建实验
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/api/experiments" \
+curl -X POST "http://127.0.0.1:8081/api/experiments" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <teacher_access_token>" \
   -d '{
@@ -390,14 +390,14 @@ curl -X POST "http://127.0.0.1:8000/api/experiments" \
 ### 查询实验列表
 
 ```bash
-curl -X GET "http://127.0.0.1:8000/api/experiments" \
+curl -X GET "http://127.0.0.1:8081/api/experiments" \
   -H "Authorization: Bearer <access_token>"
 ```
 
 ### 保存草稿
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/api/submissions/save" \
+curl -X POST "http://127.0.0.1:8081/api/submissions/save" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <access_token>" \
   -d '{
@@ -411,7 +411,7 @@ curl -X POST "http://127.0.0.1:8000/api/submissions/save" \
 ### 正式提交
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/api/submissions/submit" \
+curl -X POST "http://127.0.0.1:8081/api/submissions/submit" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <access_token>" \
   -d '{
@@ -425,14 +425,14 @@ curl -X POST "http://127.0.0.1:8000/api/submissions/submit" \
 ### 查询某实验最新版本
 
 ```bash
-curl -X GET "http://127.0.0.1:8000/api/submissions/latest/1" \
+curl -X GET "http://127.0.0.1:8081/api/submissions/latest/1" \
   -H "Authorization: Bearer <access_token>"
 ```
 
 ### 查询某实验历史版本
 
 ```bash
-curl -X GET "http://127.0.0.1:8000/api/submissions/history/1" \
+curl -X GET "http://127.0.0.1:8081/api/submissions/history/1" \
   -H "Authorization: Bearer <access_token>"
 ```
 
@@ -447,7 +447,7 @@ curl -X GET "http://127.0.0.1:8000/api/submissions/history/1" \
 ### 示例1：正常代码
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/api/code/run" \
+curl -X POST "http://127.0.0.1:8081/api/code/run" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <access_token>" \
   -d '{
@@ -458,7 +458,7 @@ curl -X POST "http://127.0.0.1:8000/api/code/run" \
 ### 示例2：报错代码
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/api/code/run" \
+curl -X POST "http://127.0.0.1:8081/api/code/run" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <access_token>" \
   -d '{
@@ -469,7 +469,7 @@ curl -X POST "http://127.0.0.1:8000/api/code/run" \
 ### 示例3：危险代码
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/api/code/run" \
+curl -X POST "http://127.0.0.1:8081/api/code/run" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <access_token>" \
   -d '{
@@ -480,7 +480,7 @@ curl -X POST "http://127.0.0.1:8000/api/code/run" \
 ### 示例4：超时代码
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/api/code/run" \
+curl -X POST "http://127.0.0.1:8081/api/code/run" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <access_token>" \
   -d '{

@@ -38,7 +38,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 python -m app.db.init_db
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8081
 ```
 
 ### 3. 启动前端

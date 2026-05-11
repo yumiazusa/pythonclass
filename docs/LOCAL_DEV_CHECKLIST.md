@@ -65,7 +65,7 @@ cd /www/wwwroot/pythonclass/frontend
 ```bash
 export VITE_PROXY_TARGET=http://host.docker.internal:8081
 npm install
-npm run dev -- --host 0.0.0.0 --port 5173
+npm run dev -- --host 0.0.0.0 --port 8082
 ```
 
 说明：当后端运行在宿主机（你本机 `python3`）时，容器内访问宿主机应使用 `host.docker.internal`，不要使用 `127.0.0.1`。此处端口与后端保持一致（当前为 `8081`）。
@@ -94,13 +94,13 @@ npm run build
 
 检查点：
 
-- `npm run dev` 正常启动（默认 `http://127.0.0.1:5173` 或终端输出地址）
+- `npm run dev` 正常启动（默认 `http://127.0.0.1:8082` 或终端输出地址）
 - `npm run build` 成功，无报错退出
 - 若使用容器 Node，访问地址以你面板/NAT 映射后的地址为准
 
 ## 4. 前后端联调检查
 
-先启动后端 `8000`，再启动前端 `5173`，然后检查：
+先启动后端 `8081`，再启动前端 `8082`，然后检查：
 
 1. 打开前端页面可进入实验列表页
 2. 前端请求 `/api/*` 可被代理到后端（Vite 已配置）

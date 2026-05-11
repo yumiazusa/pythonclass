@@ -8,7 +8,8 @@ export default defineConfig(({ mode }) => {
     plugins: [vue()],
     server: {
       host: "0.0.0.0",
-      port: 5173,
+      port: 8082,
+      strictPort: true,
       proxy: {
         "/api": {
           target: proxyTarget,
