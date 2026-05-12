@@ -28,3 +28,23 @@
 5. 一致性：三端（学生/教师/管理员）共享统一控件语言与交互节奏。
 6. 视觉基线冻结：后续迭代以“增量优化”为主，不随意改动已稳定的颜色、排版与组件形态；新功能优先复用现有样式系统。
 7. 质量目标：按接近旗舰级体验打磨细节，优先保证可读性、可触达性与跨端一致体验。
+
+## Experiment Configuration Rules
+
+后续设计实验配置时，默认按平台手动配置格式输出，不额外生成 Markdown 或 SQL，除非用户明确要求。
+
+### Output Format
+- 按字段块输出：`title`、`slug`、`interaction_mode`、`template_type`、`description`、`allow_edit_generated_code`、`instruction_content`、`template_schema`、`import_config`、`code_template`。
+- `instruction_content` 使用适合直接粘贴到平台的 Markdown。
+- `template_schema` 和 `import_config` 输出完整 JSON。
+- `code_template` 输出完整代码模板。
+- 若实验依赖新增 Python 包或导入白名单，仅在末尾提供“最小增量命令/修改说明”，不要主动扩大改动范围。
+
+### Guided Code Style
+- 面向学生的 guided_template 实验代码必须分步式设计。
+- 第一轮代码只放开前置步骤，例如连接数据库、读取数据、预览数据、查看基本规模。
+- 后续建模、分析、评价、可视化等步骤应先写在代码中但保持注释状态，便于教师按课堂进度逐步带学生取消注释。
+- 每一步都要有清晰中文标题输出，例如“第一步：读取数据”“第二步：查看数据规模”。
+- 有表格结果时优先使用 `__TABLE_JSON__=` 输出，方便前端表格卡片展示。
+- 有可视化价值的实验应设计图表，但可视化代码也遵循分步开放原则，未开放部分先注释。
+- 实验代码应优先服务学生理解，避免一次性给出完整答案造成学生只运行不思考。

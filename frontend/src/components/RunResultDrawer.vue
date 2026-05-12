@@ -62,7 +62,11 @@
               <table>
                 <thead>
                   <tr>
-                    <th v-for="column in tableColumns" :key="column">{{ column }}</th>
+                    <th v-for="column in tableColumns" :key="column" :style="{ minWidth: getColumnMinWidth(column) }">
+                      <span v-for="(line, lineIndex) in splitColumnLabel(column)" :key="`${column}-${lineIndex}`" class="header-line">
+                        {{ line }}
+                      </span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -476,6 +480,25 @@ function stringifyCell(value) {
   return String(value);
 }
 
+function splitColumnLabel(label) {
+  const text = String(label ?? "");
+  if (text.length <= 4) {
+    return [text];
+  }
+  return text.match(/.{1,4}/g) ?? [text];
+}
+
+function getColumnMinWidth(label) {
+  const length = String(label ?? "").length;
+  if (length >= 9) {
+    return "112px";
+  }
+  if (length >= 5) {
+    return "96px";
+  }
+  return "72px";
+}
+
 watch(
   () => props.visible,
   (visible) => {
@@ -674,6 +697,7 @@ onBeforeUnmount(() => {
   border-radius: 10px;
   background: var(--surface-1);
   padding: 12px;
+  min-width: 0;
 }
 
 .content-card h4 {
@@ -702,16 +726,21 @@ onBeforeUnmount(() => {
 }
 
 .table-scroll {
-  max-height: 320px;
+  width: 100%;
+  max-width: 100%;
+  max-height: min(460px, 48vh);
   overflow: auto;
   border: 1px solid var(--border-soft);
   border-radius: 8px;
+  overscroll-behavior: contain;
 }
 
 .table-scroll table {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
   font-size: 14px;
+  table-layout: auto;
 }
 
 .table-scroll th,
@@ -727,6 +756,18 @@ onBeforeUnmount(() => {
   position: sticky;
   top: 0;
   z-index: 1;
+  color: var(--text-strong);
+  font-weight: 700;
+  line-height: 1.45;
+  white-space: normal;
+}
+
+.table-scroll td {
+  white-space: nowrap;
+}
+
+.header-line {
+  display: block;
 }
 
 .chart-wrap {
