@@ -22,6 +22,8 @@ from app.schemas.admin import (
     AdminCreateAdminRequest,
     AdminCreateTeacherRequest,
     AdminOverviewRead,
+    AdminExperimentConfigImportRequest,
+    AdminExperimentConfigImportResponse,
     AdminResetPasswordRequest,
     AdminResetPasswordResponse,
     AdminSetUserRoleRequest,
@@ -289,6 +291,58 @@ def create_admin_experiment(
         create_payload["code_template"] = payload.code_template or None
     created = crud_experiment.create_admin_experiment(db, create_payload)
     return _to_admin_experiment_item(created)
+
+
+@router.post("/experiments/import-config", response_model=AdminExperimentConfigImportResponse)
+def import_admin_experiment_config(
+    payload: AdminExperimentConfigImportRequest,
+    db: DBSession,
+    admin_user: CurrentAdmin,
+) -> AdminExperimentConfigImportResponse:
+    _ = admin_user
+    clean_title = payload.title.strip()
+    if not clean_title:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="标题不能为空")
+    clean_slug = payload.slug.strip()
+    if not clean_slug:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="slug 不能为空")
+
+    normalized_open_at = _normalize_to_utc_naive(payload.open_at)
+    normalized_due_at = _normalize_to_utc_naive(payload.due_at)
+    if normalized_open_at and normalized_due_at and normalized_due_at <= normalized_open_at:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="截止时间必须晚于开放时间")
+
+    import_payload = payload.model_dump()
+    import_payload["slug"] = clean_slug
+    import_payload["title"] = clean_title
+    import_payload["open_at"] = normalized_open_at
+    import_payload["due_at"] = normalized_due_at
+    if isinstance(payload.description, str):
+        import_payload["description"] = payload.description.strip() or None
+    if isinstance(payload.instruction_content, str):
+        import_payload["instruction_content"] = payload.instruction_content.strip() or None
+    if isinstance(payload.starter_code, str):
+        import_payload["starter_code"] = payload.starter_code
+    if isinstance(payload.template_type, str):
+        import_payload["template_type"] = payload.template_type.strip() or None
+    if isinstance(payload.code_template, str):
+        import_payload["code_template"] = payload.code_template or None
+
+    existed = crud_experiment.get_by_slug(db, slug=clean_slug)
+    if existed:
+        updated = crud_experiment.update_admin_experiment(db, experiment=existed, payload=import_payload)
+        return AdminExperimentConfigImportResponse(
+            action="updated",
+            message="实验配置已更新",
+            experiment=_to_admin_experiment_item(updated),
+        )
+
+    created = crud_experiment.create_admin_experiment(db, import_payload)
+    return AdminExperimentConfigImportResponse(
+        action="created",
+        message="实验配置已导入",
+        experiment=_to_admin_experiment_item(created),
+    )
 
 
 @router.get("/experiments/{experiment_id}", response_model=AdminExperimentItem)

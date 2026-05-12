@@ -216,6 +216,16 @@ class AdminExperimentCreateRequest(BaseModel):
     due_at: datetime | None = None
 
 
+class AdminExperimentConfigImportRequest(AdminExperimentCreateRequest):
+    pass
+
+
+class AdminExperimentConfigImportResponse(BaseModel):
+    action: str
+    message: str
+    experiment: AdminExperimentItem
+
+
 class AdminExperimentUpdateRequest(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=200)
     slug: str | None = Field(default=None, min_length=1, max_length=120)

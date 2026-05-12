@@ -8,6 +8,28 @@
     <article v-if="errorMessage" class="panel error">{{ errorMessage }}</article>
     <article v-if="actionMessage" :class="['panel', actionError ? 'error' : 'success']">{{ actionMessage }}</article>
 
+    <article class="panel config-panel">
+      <div class="config-copy">
+        <h3>实验配置迁移</h3>
+        <p>导出当前实验配置为 JSON，导入时会按 slug 新建或更新服务器中的实验配置。</p>
+      </div>
+      <div class="config-actions">
+        <button type="button" class="btn plain" :disabled="isLoading || !isEditMode" @click="handleExportConfig">
+          导出配置
+        </button>
+        <button type="button" class="btn primary" :disabled="isLoading" @click="openImportPicker">
+          导入配置
+        </button>
+        <input
+          ref="importFileInput"
+          class="visually-hidden"
+          type="file"
+          accept="application/json,.json"
+          @change="handleImportFileChange"
+        />
+      </div>
+    </article>
+
     <article class="panel">
       <div class="form-grid">
         <label class="field">
@@ -146,6 +168,7 @@ import { useRoute, useRouter } from "vue-router";
 import {
   createAdminExperiment,
   getAdminExperimentById,
+  importAdminExperimentConfig,
   updateAdminExperiment,
 } from "../api/admin";
 import { toDateTimeLocalInput, toUtcIsoStringFromLocalInput } from "../utils/datetime";
@@ -157,6 +180,7 @@ const isLoading = ref(false);
 const errorMessage = ref("");
 const actionMessage = ref("");
 const actionError = ref(false);
+const importFileInput = ref(null);
 
 const experimentId = computed(() => Number(route.params.id || 0));
 const isEditMode = computed(() => Number.isInteger(experimentId.value) && experimentId.value > 0);
@@ -240,6 +264,71 @@ function buildPayload() {
   return payload;
 }
 
+function buildConfigFilePayload() {
+  const config = buildPayload();
+  return {
+    file_type: "pythonclass_experiment_config",
+    version: 1,
+    exported_at: new Date().toISOString(),
+    experiment_config: config,
+  };
+}
+
+function downloadJsonFile(filename, payload) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function normalizeImportedConfig(rawPayload) {
+  const config = rawPayload?.experiment_config || rawPayload?.config || rawPayload;
+  if (!config || typeof config !== "object" || Array.isArray(config)) {
+    throw new Error("导入文件不是有效的实验配置 JSON");
+  }
+  const allowedKeys = [
+    "title",
+    "slug",
+    "description",
+    "instruction_content",
+    "starter_code",
+    "interaction_mode",
+    "template_type",
+    "template_schema",
+    "code_template",
+    "import_config",
+    "allow_edit_generated_code",
+    "sort_order",
+    "is_active",
+    "is_published",
+    "open_at",
+    "due_at",
+  ];
+  const normalized = {};
+  allowedKeys.forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(config, key)) {
+      normalized[key] = config[key];
+    }
+  });
+  if (!normalized.title || !normalized.slug) {
+    throw new Error("导入配置必须包含 title 和 slug");
+  }
+  normalized.interaction_mode = normalized.interaction_mode || "native_editor";
+  if (!["native_editor", "guided_template"].includes(normalized.interaction_mode)) {
+    throw new Error("interaction_mode 仅支持 native_editor 或 guided_template");
+  }
+  normalized.allow_edit_generated_code = normalized.allow_edit_generated_code !== false;
+  normalized.sort_order = Number.isFinite(Number(normalized.sort_order)) ? Number(normalized.sort_order) : 0;
+  normalized.is_active = normalized.is_active !== false;
+  normalized.is_published = normalized.is_published === true;
+  return normalized;
+}
+
 function applyDetail(detail) {
   form.title = detail.title || "";
   form.slug = detail.slug || "";
@@ -281,6 +370,60 @@ function goBack() {
 
 function getActionErrorMessage(error) {
   return error?.response?.data?.detail || error?.response?.data?.message || error?.message || "请求失败";
+}
+
+function handleExportConfig() {
+  actionMessage.value = "";
+  actionError.value = false;
+  try {
+    const exportPayload = buildConfigFilePayload();
+    const filename = `${exportPayload.experiment_config.slug || "experiment"}-config.json`;
+    downloadJsonFile(filename, exportPayload);
+    actionMessage.value = "实验配置已导出";
+  } catch (error) {
+    actionMessage.value = error.message || "导出配置失败";
+    actionError.value = true;
+  }
+}
+
+function openImportPicker() {
+  importFileInput.value?.click();
+}
+
+async function handleImportFileChange(event) {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) {
+    return;
+  }
+  actionMessage.value = "";
+  actionError.value = false;
+  errorMessage.value = "";
+
+  try {
+    const rawText = await file.text();
+    const rawPayload = JSON.parse(rawText);
+    const payload = normalizeImportedConfig(rawPayload);
+    const confirmed = window.confirm(
+      `确认导入实验配置「${payload.title}」吗？\n若服务器已存在相同 slug，将更新该实验配置。`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    isLoading.value = true;
+    const result = await importAdminExperimentConfig(payload);
+    const imported = result.experiment;
+    actionMessage.value = `${result.message}：${imported.title}（slug: ${imported.slug}）`;
+    actionError.value = false;
+    applyDetail(imported);
+    await router.replace(`/admin/experiments/${imported.experiment_id}/edit`);
+  } catch (error) {
+    actionMessage.value = `导入失败：${getActionErrorMessage(error)}`;
+    actionError.value = true;
+  } finally {
+    isLoading.value = false;
+  }
 }
 
 async function handleSubmit() {
@@ -357,6 +500,40 @@ onMounted(() => {
 .head-panel p {
   margin: 8px 0 0;
   color: var(--text-muted);
+}
+
+.config-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.config-copy h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.config-copy p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.config-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .form-grid {

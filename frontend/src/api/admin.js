@@ -25,6 +25,11 @@ export async function updateAdminExperiment(experimentId, payload) {
   return data;
 }
 
+export async function importAdminExperimentConfig(payload) {
+  const { data } = await request.post("/admin/experiments/import-config", payload);
+  return data;
+}
+
 export async function enableAdminExperiment(experimentId) {
   const { data } = await request.post(`/admin/experiments/${experimentId}/enable`);
   return data;
