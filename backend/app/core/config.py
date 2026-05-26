@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     mysql_db: str = "edu_code_platform"
     jwt_secret_key: str = "please-change-this-secret"
     jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60
+    access_token_expire_minutes: int = 30
     code_run_timeout_seconds: int = 60
     code_run_concurrency_limit: int = 8
     code_run_queue_wait_seconds: int = 300

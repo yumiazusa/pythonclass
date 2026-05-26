@@ -24,6 +24,7 @@ frontend/.env
 
 # database dumps / backups
 *.sql
+!table_raw/*.sql
 *.sql.gz
 *.bak
 backup/

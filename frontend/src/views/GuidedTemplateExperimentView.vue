@@ -41,8 +41,13 @@
         <h3>参数设置（guided template）</h3>
         <div class="params-grid">
           <label v-for="field in templateFields" :key="field.name" class="field">
-            <span>{{ field.label }}（{{ field.name }}）</span>
-            <select v-if="field.type === 'select'" v-model="templateForm[field.name]" :disabled="isBusy || !canTemplateActions">
+            <span :title="`${field.label}（${field.name}）`">{{ field.label }}（{{ field.name }}）</span>
+            <select
+              v-if="field.type === 'select'"
+              v-model="templateForm[field.name]"
+              :title="resolveTemplateSelectTitle(field)"
+              :disabled="isBusy || !canTemplateActions"
+            >
               <option value="">{{ field.placeholder || "请选择" }}</option>
               <option v-for="item in field.options" :key="`${field.name}-${item.value}`" :value="item.value">{{ item.label }}</option>
             </select>
@@ -732,6 +737,13 @@ function extractTemplateFields(schemaValue) {
 function resolveInputType(field) {
   if (field?.type === "number") return "number";
   return "text";
+}
+
+function resolveTemplateSelectTitle(field) {
+  if (!field || field.type !== "select") return "";
+  const value = String(templateForm[field.name] ?? "");
+  const option = field.options.find((item) => item.value === value);
+  return option?.label || field.placeholder || "";
 }
 
 function isTemplatePasswordVisible(fieldName) {
@@ -1942,6 +1954,7 @@ onBeforeUnmount(() => {
 .field {
   display: grid;
   gap: 6px;
+  min-width: 0;
 }
 
 .field span {
@@ -1949,12 +1962,19 @@ onBeforeUnmount(() => {
   color: var(--text-muted);
   line-height: 1.35;
   overflow-wrap: anywhere;
+  display: -webkit-box;
+  min-height: 38px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .field input,
 .field select,
 .field textarea {
   width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   border: 1px solid var(--border-strong);
   border-radius: 8px;
@@ -1969,6 +1989,12 @@ onBeforeUnmount(() => {
   padding: 0 10px;
   font-size: 15px;
   line-height: 1.2;
+}
+
+.field select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .field textarea {
