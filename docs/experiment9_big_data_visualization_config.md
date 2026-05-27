@@ -346,8 +346,15 @@ print("__TABLE_JSON__=" + json.dumps(summary_rows.to_dict(orient="records"), ens
 #     plt.show()
 #
 # elif descriptive_chart == "region_profit_box":
-#     chart_data = df.groupby("区域", as_index=False)["毛利率"].agg(["mean", "median", "min", "max"]).reset_index()
-#     chart_data.columns = ["区域", "平均毛利率", "中位数毛利率", "最低毛利率", "最高毛利率"]
+#     chart_data = (
+#         df.groupby("区域", as_index=False)
+#         .agg(
+#             平均毛利率=("毛利率", "mean"),
+#             中位数毛利率=("毛利率", "median"),
+#             最低毛利率=("毛利率", "min"),
+#             最高毛利率=("毛利率", "max"),
+#         )
+#     )
 #     print()
 #     print("【描述性分析：区域毛利率分布统计】")
 #     print(chart_data)
@@ -441,17 +448,20 @@ print("__TABLE_JSON__=" + json.dumps(summary_rows.to_dict(orient="records"), ens
 #     plt.show()
 #
 # elif structure_chart == "region_product_stacked":
+#     product_order = ["硬件设备", "软件订阅", "咨询服务", "财税服务", "维护服务"]
 #     chart_data = pd.pivot_table(df, values="销售收入", index="区域", columns="产品类别", aggfunc="sum", fill_value=0)
+#     chart_data = chart_data.reindex(columns=product_order, fill_value=0)
 #     print()
 #     print("【结构分析：区域-产品类别收入结构】")
 #     print(chart_data)
 #     print("__TABLE_JSON__=" + json.dumps(chart_data.reset_index().to_dict(orient="records"), ensure_ascii=False, default=str))
-#     chart_data.plot(kind="bar", stacked=True, figsize=(9, 5), colormap="tab20")
+#     ax = chart_data.plot(kind="bar", stacked=True, figsize=(9, 5), colormap="tab20", edgecolor="white", width=0.75)
 #     plt.title("结构分析：区域-产品类别收入结构")
 #     plt.xlabel("区域")
 #     plt.ylabel("销售收入")
 #     plt.xticks(rotation=0)
 #     plt.legend(title="产品类别", bbox_to_anchor=(1.02, 1), loc="upper left")
+#     plt.grid(axis="y", linestyle="--", alpha=0.25)
 #     plt.tight_layout()
 #     plt.show()
 
