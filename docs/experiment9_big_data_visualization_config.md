@@ -170,7 +170,7 @@ true
       "options": [
         { "label": "柱状图：区域 + 销售收入，比较区域收入排名", "value": "region_sales_bar" },
         { "label": "条形图：产品类别 + 毛利率，比较产品盈利能力", "value": "product_profit_barh" },
-        { "label": "分组柱状图：销售渠道 + 销售收入/回款金额，比较渠道回款表现", "value": "channel_collection_grouped" }
+        { "label": "复合图：销售渠道 + 销售收入/回款金额/回款率，比较渠道收入与回款效率", "value": "channel_collection_grouped" }
       ],
       "required": true
     },
@@ -403,15 +403,33 @@ print("__TABLE_JSON__=" + json.dumps(summary_rows.to_dict(orient="records"), ens
 #     chart_data = df.groupby("销售渠道", as_index=False)[["销售收入", "回款金额"]].sum().sort_values("销售收入", ascending=False)
 #     chart_data["回款率"] = (chart_data["回款金额"] / chart_data["销售收入"]).round(4)
 #     print()
-#     print("【对比分析：销售渠道收入与回款金额】")
+#     print("【对比分析：销售渠道收入、回款金额与回款率】")
 #     print(chart_data)
 #     print("__TABLE_JSON__=" + json.dumps(chart_data.to_dict(orient="records"), ensure_ascii=False, default=str))
 #     chart_long = chart_data.melt(id_vars="销售渠道", value_vars=["销售收入", "回款金额"], var_name="指标", value_name="金额")
-#     plt.figure(figsize=(8, 4.8))
-#     sns.barplot(data=chart_long, x="销售渠道", y="金额", hue="指标", palette=["#60a5fa", "#34d399"])
-#     plt.title("对比分析：销售渠道收入与回款金额")
-#     plt.xlabel("销售渠道")
-#     plt.ylabel("金额")
+#     fig, ax1 = plt.subplots(figsize=(9, 5))
+#     sns.barplot(data=chart_long, x="销售渠道", y="金额", hue="指标", palette=["#22c55e", "#f59e0b"], ax=ax1)
+#     ax1.set_title("对比分析：销售渠道收入、回款金额与回款率")
+#     ax1.set_xlabel("销售渠道")
+#     ax1.set_ylabel("金额")
+#     ax1.grid(axis="y", linestyle="--", alpha=0.25)
+#
+#     ax2 = ax1.twinx()
+#     x_positions = np.arange(len(chart_data))
+#     ax2.plot(x_positions, chart_data["回款率"], color="#e11d48", marker="o", linewidth=2.8, markersize=7, label="回款率")
+#     ax2.set_ylabel("回款率")
+#     rate_min = max(0, chart_data["回款率"].min() - 0.05)
+#     rate_max = min(1.05, chart_data["回款率"].max() + 0.05)
+#     ax2.set_ylim(rate_min, rate_max)
+#     rate_ticks = np.linspace(rate_min, rate_max, 5)
+#     ax2.set_yticks(rate_ticks)
+#     ax2.set_yticklabels([f"{tick:.0%}" for tick in rate_ticks])
+#     for idx, rate in enumerate(chart_data["回款率"]):
+#         ax2.text(idx, rate + 0.01, f"{rate:.1%}", ha="center", va="bottom", color="#e11d48", fontsize=9)
+#
+#     bar_handles, bar_labels = ax1.get_legend_handles_labels()
+#     line_handles, line_labels = ax2.get_legend_handles_labels()
+#     ax1.legend(bar_handles + line_handles, bar_labels + line_labels, loc="upper center", bbox_to_anchor=(0.5, 1.15), ncol=3, frameon=False)
 #     plt.tight_layout()
 #     plt.show()
 

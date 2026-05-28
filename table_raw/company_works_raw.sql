@@ -119,26 +119,99 @@ FROM (
   FROM (
     SELECT
       n,
-      1 + MOD(n * 7, 48) AS `订单数量`,
-      ROUND(0.02 + MOD(n * 13, 20) / 100.0, 4) AS `折扣率`,
-      ROUND(
-        (1800 + MOD(n * 137, 86000)) *
-        CASE MOD(n, 5)
-          WHEN 0 THEN 1.35
-          WHEN 1 THEN 1.10
+      CAST(ROUND(
+        (6 + MOD(n * 7, 42)) *
+        CASE MOD(n * 2 + FLOOR((n - 1) / 5), 5)
+          WHEN 0 THEN 1.55
+          WHEN 1 THEN 1.22
           WHEN 2 THEN 0.95
-          WHEN 3 THEN 1.22
-          ELSE 1.00
+          WHEN 3 THEN 0.82
+          ELSE 0.62
         END *
         CASE MOD(n, 4)
-          WHEN 0 THEN 1.28
-          WHEN 1 THEN 1.05
-          WHEN 2 THEN 0.92
-          ELSE 1.16
+          WHEN 0 THEN 1.08
+          WHEN 1 THEN 1.25
+          WHEN 2 THEN 0.82
+          ELSE 1.15
+        END,
+        0
+      ) AS UNSIGNED) AS `订单数量`,
+      ROUND(
+        CASE MOD(n, 4)
+          WHEN 0 THEN 0.04
+          WHEN 1 THEN 0.08
+          WHEN 2 THEN 0.16
+          ELSE 0.06
+        END +
+        CASE MOD(n, 3)
+          WHEN 0 THEN 0.00
+          WHEN 1 THEN 0.025
+          ELSE 0.04
+        END +
+        MOD(n * 13, 5) / 100.0,
+        4
+      ) AS `折扣率`,
+      ROUND(
+        (3000 + MOD(n * 137, 76000)) *
+        CASE MOD(n, 5)
+          WHEN 0 THEN 1.85
+          WHEN 1 THEN 1.35
+          WHEN 2 THEN 1.10
+          WHEN 3 THEN 0.72
+          ELSE 0.55
+        END *
+        CASE MOD(n, 4)
+          WHEN 0 THEN 1.15
+          WHEN 1 THEN 1.65
+          WHEN 2 THEN 0.70
+          ELSE 1.35
+        END *
+        CASE MOD(n * 2 + FLOOR((n - 1) / 5), 5)
+          WHEN 0 THEN 1.80
+          WHEN 1 THEN 1.35
+          WHEN 2 THEN 0.95
+          WHEN 3 THEN 0.72
+          ELSE 0.50
+        END *
+        CASE MOD(n, 3)
+          WHEN 0 THEN 0.75
+          WHEN 1 THEN 1.00
+          ELSE 1.45
+        END *
+        CASE
+          WHEN MOD(n, 5) = 0 AND MOD(n * 2 + FLOOR((n - 1) / 5), 5) = 0 THEN 1.35
+          WHEN MOD(n, 5) = 1 AND MOD(n * 2 + FLOOR((n - 1) / 5), 5) = 1 THEN 1.30
+          WHEN MOD(n, 5) = 2 AND MOD(n * 2 + FLOOR((n - 1) / 5), 5) = 2 THEN 1.22
+          WHEN MOD(n, 5) = 3 AND MOD(n * 2 + FLOOR((n - 1) / 5), 5) = 3 THEN 1.28
+          WHEN MOD(n, 5) = 4 AND MOD(n * 2 + FLOOR((n - 1) / 5), 5) = 4 THEN 1.35
+          ELSE 0.90
         END,
         2
       ) AS `基准收入`,
-      ROUND(0.14 + MOD(n * 11, 30) / 100.0, 4) AS `毛利率预估`,
+      ROUND(
+        CASE MOD(n * 2 + FLOOR((n - 1) / 5), 5)
+          WHEN 0 THEN 0.22
+          WHEN 1 THEN 0.45
+          WHEN 2 THEN 0.36
+          WHEN 3 THEN 0.30
+          ELSE 0.18
+        END +
+        CASE MOD(n, 5)
+          WHEN 0 THEN 0.030
+          WHEN 1 THEN 0.015
+          WHEN 2 THEN 0.000
+          WHEN 3 THEN -0.020
+          ELSE -0.035
+        END +
+        CASE MOD(n, 4)
+          WHEN 0 THEN 0.010
+          WHEN 1 THEN -0.005
+          WHEN 2 THEN -0.025
+          ELSE 0.020
+        END +
+        MOD(n * 11, 5) / 100.0,
+        4
+      ) AS `毛利率预估`,
       12 + MOD(n * 5, 72) AS `库存周转天数`,
       ROUND(72 + MOD(n * 19, 2800) / 100.0, 2) AS `客户满意度`
     FROM (
