@@ -1,0 +1,135 @@
+{
+  "file_type": "pythonclass_experiment_config",
+  "version": 1,
+  "exported_at": "2026-06-09T06:26:14.181Z",
+  "experiment_config": {
+    "title": "实验4：数据预准备与数据清洗",
+    "slug": "exp-data-cleaning-basic",
+    "description": "读取实验3生成的数据表，观察缺失值、重复值和异常数据，并完成基础清洗后写入新表。",
+    "instruction_content": "# 实验4：数据预准备与数据清洗\n\n---\n\n## 一、实验目标\n\n通过本实验，你需要掌握：\n\n- 使用 pandas 对数据表进行质量检查\n- 查看缺失值和重复值\n- 对文本字段进行统一标准化处理\n- 对明显不合理的数值进行处理\n- 将清洗后的数据保存到新的 MySQL 数据表中\n\n---\n\n## 二、实验任务\n\n请完成以下任务：\n\n1. 从个人数据库中读取实验3生成的数据表\n2. 查看前若干行数据\n3. 查看缺失值统计\n4. 查看重复值统计\n5. 对缺失值进行简单填补\n6. 对 `门店促销事件` 字段进行清洗\n7. 对重复行进行删除\n8. 对明显不合理的负数进行处理\n9. 将清洗后的数据保存到新表 `baojie_clean_学号`\n\n---\n\n## 三、实验要求\n\n- 必须正确连接自己的 MySQL 数据库\n- 必须成功读取实验3生成的表\n- 必须输出缺失值和重复值统计\n- 必须完成基础清洗\n- 必须将清洗结果写入新表\n- 新表名称必须规范\n\n---\n\n## 四、操作步骤\n\n1. 填写数据库连接信息\n2. 填写源表名称和清洗后新表名称\n3. 设置展示前几条\n4. 选择需要导入的库\n5. 点击“加载骨架模板代码”\n6. 点击“应用参数到代码”\n7. 逐步取消注释并运行代码\n8. 观察每一步清洗结果\n9. 成功后提交实验\n\n---\n\n## 五、注意事项\n\n- 本实验读取的是你在实验3中创建的数据表\n- 请不要直接修改原表\n- 请把清洗后的数据保存到新表\n- 建议每完成一步就运行一次，观察结果变化\n\n---\n\n## 六、提示\n\n本实验涉及：\n- pandas\n- pymysql\n- numpy\n- SQLAlchemy\n- 缺失值处理\n- 重复值检查\n- 文本标准化处理\n- MySQL 写表",
+    "starter_code": null,
+    "interaction_mode": "guided_template",
+    "template_type": "data_cleaning_basic",
+    "template_schema": {
+      "fields": [
+        {
+          "name": "db_name",
+          "type": "text",
+          "label": "清洗表所在数据库名",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：2025xxxxxxx"
+        },
+        {
+          "name": "db_user",
+          "type": "text",
+          "label": "数据库登录用户名",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：2025xxxxxxx"
+        },
+        {
+          "name": "db_password",
+          "type": "password",
+          "label": "数据库登录密码",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：s2025xxxxxxx"
+        },
+        {
+          "name": "source_table",
+          "type": "text",
+          "label": "源表名称",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：baojie_20201013"
+        },
+        {
+          "name": "target_table",
+          "type": "text",
+          "label": "清洗后目标表名称",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：baojie_clean_20201013"
+        },
+        {
+          "max": 50,
+          "min": 1,
+          "name": "preview_count",
+          "type": "number",
+          "label": "展示前几条",
+          "default": null,
+          "required": true,
+          "placeholder": "例如：10"
+        },
+        {
+          "name": "numeric_fill_strategy",
+          "type": "select",
+          "label": "数值型字段缺失值填补方式",
+          "default": "",
+          "options": [
+            {
+              "label": "使用中位数填补",
+              "value": "median"
+            },
+            {
+              "label": "使用均值填补",
+              "value": "mean"
+            },
+            {
+              "label": "填补为0",
+              "value": "zero"
+            }
+          ],
+          "required": true
+        },
+        {
+          "name": "event_fill_value",
+          "type": "select",
+          "label": "门店促销事件缺失值填充值",
+          "default": "",
+          "options": [
+            {
+              "label": "品牌联合促销cobranding",
+              "value": "cobranding"
+            },
+            {
+              "label": "节假日促销holiday",
+              "value": "holiday"
+            },
+            {
+              "label": "门店特别促销special",
+              "value": "special"
+            },
+            {
+              "label": "无促销活动non_event",
+              "value": "non_event"
+            }
+          ],
+          "required": true,
+          "placeholder": "例如：special"
+        }
+      ]
+    },
+    "code_template": "# ========================\n# 实验4：数据预准备与数据清洗\n# ========================\n\n{{imports}}\n\n# 第一步：连接个人数据库\nengine = create_engine(\n    f\"mysql+pymysql://{{db_user}}:{{db_password}}@127.0.0.1:3306/{{db_name}}?charset=utf8mb4\"\n)\n\n# 第二步：读取实验3生成的源表\nsource_table = \"{{source_table}}\"\nquery = f\"SELECT * FROM {source_table}\"\ndf = pd.read_sql(query, engine)\n\n# 第三步：查看前N条数据\npreview_count = int({{preview_count}})\nprint(\"【前几条数据】\")\nprint(df.head(preview_count))\n\n# 第四步：查看二维表基本信息\nprint()\nprint(\"【数据基本信息】\")\ndf.info()\n\n## ========================\n## 以下步骤将根据课程进度逐步开放\n## 当前先不要取消注释\n## ========================\n\n## 第五步：查看重复值统计\n# print()\n# print(\"【重复值统计】\")\n# dup_count = df.duplicated().sum()\n# print(\"重复行数：\", dup_count)\n\n## 第六步：删除重复行（直接按整行判断，保留第一条）\n# print()\n# print(\"【删除重复行】\")\n# before_rows = len(df)\n# df = df.drop_duplicates(keep=\"first\").reset_index(drop=True)\n# after_rows = len(df)\n# print(\"删除前行数：\", before_rows)\n# print(\"删除后行数：\", after_rows)\n# print(\"删除重复行数：\", before_rows - after_rows)\n\n## 第七步：清洗“门店促销事件”字段\n## 目标：\n## 1. 去掉前后空格\n## 2. 统一转为小写\n## 3. 缺失值填补为指定内容\n#\n# print()\n# print(\"【清洗前门店促销事件统计】\")\n# print(df[\"门店促销事件\"].value_counts(dropna=False))\n#\n# df[\"门店促销事件\"] = df[\"门店促销事件\"].fillna(\"{{event_fill_value}}\")\n# df[\"门店促销事件\"] = df[\"门店促销事件\"].astype(str).str.strip().str.lower()\n#\n# print()\n# print(\"【清洗后的门店促销事件分类统计】\")\n# print(df[\"门店促销事件\"].value_counts(dropna=False))\n\n## 第八步：处理明显不合理的负数\n## 对以下字段中小于0的值，替换为缺失值 NaN\n#\n# numeric_cols = [\"门店销售额\", \"微信推送次数\", \"本地电视广告投入\", \"线上广告投入\", \"门店内广告投入\", \"门店销售人员投入\"]\n# for col in numeric_cols:\n#     df[col] = pd.to_numeric(df[col], errors=\"coerce\")\n#     df.loc[df[col] < 0, col] = np.nan\n#\n# print()\n# print(\"【负数处理后缺失值统计】\")\n# print(df[numeric_cols].isnull().sum())\n\n## 第九步：填补数值型缺失值\n## 策略：\n## - median：中位数\n## - mean：均值\n## - zero：填0\n#\n# strategy = \"{{numeric_fill_strategy}}\"\n# numeric_cols = [\"门店销售额\", \"微信推送次数\", \"本地电视广告投入\", \"线上广告投入\", \"门店内广告投入\", \"门店销售人员投入\"]\n#\n# for col in numeric_cols:\n#     if strategy == \"median\":\n#         fill_value = df[col].median()\n#     elif strategy == \"mean\":\n#         fill_value = df[col].mean()\n#     else:\n#         fill_value = 0\n#     df[col] = df[col].fillna(fill_value)\n#\n# print()\n# print(\"【数值型缺失值填补后】\")\n# print(df[numeric_cols].isnull().sum())\n\n## 第十步：清洗完成后，再生成新序号并预览\n# df_clean = df.reset_index(drop=True).copy()\n# df_clean[\"序号\"] = df_clean.index + 1\n#\n# print()\n# print(\"【清洗后前几条数据】\")\n# print(df_clean.head(preview_count))\n#\n# clean_rows = df_clean.head(preview_count).to_dict(orient=\"records\")\n# print(\"__TABLE_JSON__=\" + json.dumps(clean_rows, ensure_ascii=False, default=str))\n\n## ========================\n## 以下内容为本实验后续阶段\n## 当前先不要取消注释\n## ========================\n\n## 第十一步：创建清洗后目标表\n# target_table = \"{{target_table}}\"\n#\n# with engine.begin() as conn:\n#     conn.exec_driver_sql(f\"DROP TABLE IF EXISTS {target_table}\")\n#\n#     create_sql = f'''\n#     CREATE TABLE IF NOT EXISTS {target_table} (\n#         `序号` INT,\n#         `门店销售额` DECIMAL(12,1),\n#         `微信推送次数` INT,\n#         `本地电视广告投入` DECIMAL(12,1),\n#         `线上广告投入` DECIMAL(12,1),\n#         `门店内广告投入` DECIMAL(10,1),\n#         `门店销售人员投入` INT,\n#         `门店促销事件` VARCHAR(30)\n#     )\n#     '''\n#     conn.exec_driver_sql(create_sql)\n#\n# print()\n# print(\"【清洗后目标表创建成功】\")\n# print(\"目标表：\", \"{{target_table}}\")\n\n## 第十二步：将清洗后数据写入新表（NaN -> NULL）\n# target_table = \"{{target_table}}\"\n# insert_sql = f'''\n# INSERT INTO {target_table}\n# (`序号`, `门店销售额`, `微信推送次数`, `本地电视广告投入`, `线上广告投入`, `门店内广告投入`, `门店销售人员投入`, `门店促销事件`)\n# VALUES (%s, %s, %s, %s, %s, %s, %s, %s)\n# '''\n#\n# df_clean = df.reset_index(drop=True).copy()\n# df_clean[\"序号\"] = df_clean.index + 1\n#\n# def to_db(v):\n#     return None if pd.isna(v) else v\n#\n# inserted_count = 0\n# with engine.begin() as conn:\n#     for _, row in df_clean.iterrows():\n#         conn.exec_driver_sql(\n#             insert_sql,\n#             (\n#                 int(row.get(\"序号\")),\n#                 to_db(row.get(\"门店销售额\")),\n#                 to_db(row.get(\"微信推送次数\")),\n#                 to_db(row.get(\"本地电视广告投入\")),\n#                 to_db(row.get(\"线上广告投入\")),\n#                 to_db(row.get(\"门店内广告投入\")),\n#                 to_db(row.get(\"门店销售人员投入\")),\n#                 to_db(row.get(\"门店促销事件\"))\n#             )\n#         )\n#         inserted_count += 1\n#\n# print()\n# print(\"【清洗后数据写入完成】\")\n# print(\"目标表：\", \"{{target_table}}\")\n# print(\"写入行数：\", inserted_count)\n",
+    "import_config": {
+      "fixed_imports": [
+        "import json"
+      ],
+      "optional_imports": [
+        "import pandas as pd",
+        "import pymysql",
+        "from sqlalchemy import create_engine",
+        "import matplotlib.pyplot as plt",
+        "import seaborn as sns"
+      ],
+      "allow_custom_import": true
+    },
+    "allow_edit_generated_code": true,
+    "sort_order": 4,
+    "is_active": true,
+    "is_published": true,
+    "open_at": "2026-04-15T15:06:00.000Z",
+    "due_at": "2026-05-08T15:59:00.000Z"
+  }
+}

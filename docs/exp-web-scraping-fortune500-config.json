@@ -1,0 +1,78 @@
+{
+  "file_type": "pythonclass_experiment_config",
+  "version": 1,
+  "exported_at": "2026-06-09T06:25:57.837Z",
+  "experiment_config": {
+    "title": "实验2：网页表格数据抓取（财富中国500强）",
+    "slug": "exp-web-scraping-fortune500",
+    "description": "使用requests与BeautifulSoup抓取网页表格数据，并转换为DataFrame展示。",
+    "instruction_content": "# 实验1：网页表格数据抓取\n\n---\n\n## 一、实验目标\n\n通过本实验，你需要掌握：\n\n- 使用 requests 获取网页内容\n- 使用 BeautifulSoup 解析HTML\n- 提取表格数据\n- 使用 pandas 构建DataFrame\n\n---\n\n## 二、实验任务\n\n请完成以下任务：\n\n1. 抓取《财富中国500强》网页数据\n2. 解析网页中的表格内容\n3. 提取每一行公司数据\n4. 转换为字典列表\n5. 构建DataFrame\n6. 输出前若干条数据\n\n---\n\n## 三、实验要求\n\n- 正确获取网页内容\n- 正确解析表格结构\n- 数据字段完整\n- 输出结果正确\n\n---\n\n## 四、操作步骤\n\n1. 设置目标网址\n2. 点击“应用参数到代码”\n3. 点击运行查看结果\n4. 如有需要可手动修改代码\n5. 最终提交\n\n---\n\n## 五、注意事项\n\n- 不要删除核心代码结构\n- 如运行报错，请查看错误信息\n- 可以尝试修改展示条数\n\n---\n\n## 六、提示\n\n本实验涉及：\n- requests\n- BeautifulSoup\n- pandas\n\n👉 可在【技术文档】中查看相关说明",
+    "starter_code": null,
+    "interaction_mode": "guided_template",
+    "template_type": "web",
+    "template_schema": {
+      "fields": [
+        {
+          "name": "target_url",
+          "type": "text",
+          "label": "目标网址",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：https://www.xxxx.com/xxxxxx/c/2024-08/06/content_458018.htm"
+        },
+        {
+          "name": "user_agent",
+          "type": "select",
+          "label": "请求头模板",
+          "default": "",
+          "options": [
+            {
+              "label": "Chrome 91 完整请求头（推荐）",
+              "value": "douban_full_headers",
+              "headers": {
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Referer": "https://www.douban.com/",
+                "Connection": "keep-alive",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8"
+              }
+            }
+          ],
+          "required": true,
+          "placeholder": "请选择请求头模板"
+        },
+        {
+          "max": 100,
+          "min": 1,
+          "name": "preview_count",
+          "type": "number",
+          "label": "展示前几条",
+          "default": null,
+          "required": true,
+          "placeholder": "例如：10"
+        }
+      ]
+    },
+    "code_template": "# ========================\n# 网页表格数据抓取实验\n# ========================\n\n# 目标网页\nurl = \"{{target_url}}\"\n\n# 请求头\nheaders = {\n    \"User-Agent\": \"{{user_agent}}\"\n}\n\n# 发送请求\npage = requests.get(url, headers=headers)\npage.encoding = page.apparent_encoding\n\n# 解析网页\nsoup = BeautifulSoup(page.text, \"html.parser\")\n\n# 找到表格主体\ntbody = soup.find(\"tbody\")\n\n# 存放结果\nresult = []\n\n# 按行读取\nrows = tbody.find_all(\"tr\")\n\nfor row in rows:\n    cols = [td.get_text(\" \", strip=True) for td in row.find_all(\"td\")]\n\n    # 去掉 \"+\"\n    cols = [c for c in cols if c != \"+\"]\n\n    # 确保字段数量正确\n    if len(cols) == 5:\n        company = {\n            \"排名\": cols[0],\n            \"公司名称\": cols[2],\n            \"营业收入(百万美元)\": cols[3],\n            \"利润(百万美元)\": cols[4],\n        }\n        result.append(company)\n\n# 输出前N条\nfor company in result[:{{preview_count}}]:\n    print(company)\n\nprint(\"共抓取公司数量：\", len(result))\n\n# 转为DataFrame\ndf = pd.DataFrame(result)\n\nprint(df.head({{preview_count}}))\n\npreview_count = int({{preview_count}})\ntable_rows = df.head(int(preview_count)).to_dict(orient=\"records\")\nprint(\"__TABLE_JSON__=\" + json.dumps(table_rows, ensure_ascii=False))",
+    "import_config": {
+      "fixed_imports": [
+        "json"
+      ],
+      "optional_imports": [
+        "import pandas as pd",
+        "numpy",
+        "import requests",
+        "from bs4 import BeautifulSoup",
+        "matplotlib",
+        "seaborn"
+      ],
+      "allow_custom_import": true
+    },
+    "allow_edit_generated_code": true,
+    "sort_order": 2,
+    "is_active": true,
+    "is_published": true,
+    "open_at": "2026-03-28T08:00:00.000Z",
+    "due_at": "2026-05-08T15:59:00.000Z"
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "file_type": "pythonclass_experiment_config",
+  "version": 1,
+  "exported_at": "2026-06-09T06:26:18.644Z",
+  "experiment_config": {
+    "title": "实验5：一元线性回归分析（门店销售额预测）",
+    "slug": "exp-linear-regression-stage1",
+    "description": "读取清洗后的数据表，选择一个自变量和因变量，完成一元线性回归建模并输出模型评价结果。",
+    "instruction_content": "---\n## 一、实验目标\n\n通过本实验，你需要掌握：\n\n- 使用 pandas 读取 MySQL 数据表\n- 选择一个自变量和一个因变量\n- 使用散点图观察变量关系\n- 使用训练集和测试集建立一元线性回归模型\n- 输出模型的截距、系数和评价指标\n\n---\n\n## 二、实验任务\n\n请完成以下任务：\n\n1. 从个人数据库中读取清洗后的数据表\n2. 选择一个自变量 X 和一个因变量 y\n3. 查看前若干行数据\n4. 绘制散点图\n5. 划分训练集和测试集\n6. 使用线性回归模型进行拟合\n7. 输出模型截距和系数\n8. 输出均方误差（MSE）、R²、调整R²\n\n---\n\n## 三、实验要求\n\n- 必须正确连接自己的 MySQL 数据库\n- 必须成功读取清洗后的数据表\n- 必须正确选择一个自变量和一个因变量\n- 必须完成模型拟合\n- 必须输出模型评价指标\n\n---\n\n## 四、操作步骤\n\n1. 填写数据库连接信息\n2. 填写源表名称\n3. 选择自变量和因变量\n4. 设置测试集比例\n5. 选择需要导入的库\n6. 点击“加载骨架模板代码”\n7. 点击“应用参数到代码”\n8. 按步骤运行代码\n9. 查看模型结果并提交实验\n\n---\n\n## 五、注意事项\n\n- 本实验建议使用已经清洗完成的数据表\n- 因变量和自变量应选择数值型字段\n- 当前实验先完成基础回归分析\n- 更深入的统计检验与残差分析将在后续逐步开放\n\n---\n\n## 六、提示\n\n本实验涉及：\n- pandas\n- numpy\n- matplotlib\n- sklearn\n- 一元线性回归\n- 模型评价指标",
+    "starter_code": null,
+    "interaction_mode": "guided_template",
+    "template_type": "linear_regression_stage1",
+    "template_schema": {
+      "fields": [
+        {
+          "name": "db_name",
+          "type": "text",
+          "label": "个人数据库名",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：20201013"
+        },
+        {
+          "name": "db_user",
+          "type": "text",
+          "label": "数据库用户名",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：20201013"
+        },
+        {
+          "name": "db_password",
+          "type": "password",
+          "label": "数据库密码",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：s20201013"
+        },
+        {
+          "name": "source_table",
+          "type": "text",
+          "label": "源表名称",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：baojie_clean_20201013"
+        },
+        {
+          "name": "x_column",
+          "type": "select",
+          "label": "自变量 X",
+          "default": "",
+          "options": [
+            {
+              "label": "本地电视广告投入（推荐）",
+              "value": "本地电视广告投入"
+            },
+            {
+              "label": "线上广告投入",
+              "value": "线上广告投入"
+            },
+            {
+              "label": "门店内广告投入",
+              "value": "门店内广告投入"
+            },
+            {
+              "label": "门店销售人员投入（推荐）",
+              "value": "门店销售人员投入"
+            },
+            {
+              "label": "微信推送次数",
+              "value": "微信推送次数"
+            }
+          ],
+          "required": true
+        },
+        {
+          "name": "y_column",
+          "type": "select",
+          "label": "因变量 y",
+          "default": "",
+          "options": [
+            {
+              "label": "门店销售额",
+              "value": "门店销售额"
+            }
+          ],
+          "required": true
+        },
+        {
+          "max": 50,
+          "min": 1,
+          "name": "preview_count",
+          "type": "number",
+          "label": "展示前几条",
+          "default": 10,
+          "required": true,
+          "placeholder": "例如：10"
+        },
+        {
+          "max": 0.5,
+          "min": 0.1,
+          "name": "test_size",
+          "type": "number",
+          "label": "测试集比例",
+          "default": 0.2,
+          "required": true,
+          "placeholder": "例如：0.2"
+        },
+        {
+          "max": 999,
+          "min": 0,
+          "name": "random_state",
+          "type": "number",
+          "label": "随机种子",
+          "default": 42,
+          "required": true,
+          "placeholder": "例如：42"
+        }
+      ]
+    },
+    "code_template": "# ========================\n# 实验5：一元线性回归分析（门店销售额预测）\n# ========================\n\n{{imports}}\n\n# 第一步：连接个人数据库\nengine = create_engine(\n    f\"mysql+pymysql://{{db_user}}:{{db_password}}@127.0.0.1:3306/{{db_name}}?charset=utf8mb4\"\n)\n\n# 第二步：读取清洗后的数据表\nsource_table = \"{{source_table}}\"\nquery = f\"SELECT * FROM {source_table}\"\ndf = pd.read_sql(query, engine)\n\n# 第三步：查看前N条数据\npreview_count = int({{preview_count}})\nprint(\"【前几条数据】\")\nprint(df.head(preview_count))\nprint(\"【预览数据行数】\", min(preview_count, len(df)))\n\n# 第四步：确定自变量和因变量，并做基础清洗\nx_col = \"{{x_column}}\"\ny_col = \"{{y_column}}\"\n\nx_series = pd.to_numeric(df[x_col], errors=\"coerce\")\ny_series = pd.to_numeric(df[y_col], errors=\"coerce\")\nmodel_df = pd.DataFrame({x_col: x_series, y_col: y_series}).dropna()\n\nX = model_df[[x_col]]\ny = model_df[y_col]\n\nprint()\nprint(\"【当前选择的自变量和因变量】\")\nprint(\"自变量 X：\", x_col)\nprint(\"因变量 y：\", y_col)\nprint(\"建模样本数：\", len(model_df))\n\n# 第五步：先看散点分布\nplt.figure(figsize=(8, 5))\nplt.scatter(X[x_col], y, alpha=0.7, label=\"样本点\")\nplt.xlabel(x_col)\nplt.ylabel(y_col)\nplt.title(f\"{x_col} 与 {y_col} 的散点图\")\nplt.legend()\nplt.tight_layout()\nplt.show()\n\n## ========================\n## 以下步骤将根据课程进度逐步开放\n## 当前先不要取消注释\n## 说明：文本说明用 ##，代码行用 #，便于你一次 Ctrl+/ 放开代码\n## ========================\n\n## 第六步：划分训练集和测试集 + 建模\n# X_train, X_test, y_train, y_test = train_test_split(\n#     X,\n#     y,\n#     test_size=float({{test_size}}),\n#     random_state=int({{random_state}})\n# )\n#\n# model = LinearRegression()\n# model.fit(X_train, y_train)\n#\n# coef = float(model.coef_[0])\n# intercept = float(model.intercept_)\n#\n# print()\n# print(\"【模型参数】\")\n# print(\"截距：\", intercept)\n# print(\"系数：\", coef)\n# print(\"线性函数：\")\n# print(f\"{y_col} = {coef:.6f} * {x_col} + {intercept:.6f}\")\n\n## 第七步：执行预测并打印前10条（真实值 vs 预测值）\n# y_pred = model.predict(X_test)\n#\n# pred_preview = pd.DataFrame({\n#     \"真实值\": y_test.reset_index(drop=True),\n#     \"预测值\": pd.Series(y_pred)\n# })\n# pred_preview[\"残差\"] = pred_preview[\"真实值\"] - pred_preview[\"预测值\"]\n#\n# print()\n# print(\"【预测结果前10条】\")\n# print(pred_preview.head(10))\n\n## 第八步：绘制拟合趋势线 + 模型评价\n# x_line = X[x_col].sort_values()\n# y_line = model.predict(x_line.to_frame())\n#\n# plt.figure(figsize=(8, 5))\n# plt.scatter(X[x_col], y, alpha=0.6, label=\"样本点\")\n# plt.plot(x_line, y_line, color=\"red\", linewidth=2, label=\"线性拟合趋势线\")\n# plt.xlabel(x_col)\n# plt.ylabel(y_col)\n# plt.title(f\"{x_col} 与 {y_col}（含拟合趋势线）\")\n# plt.legend()\n# plt.tight_layout()\n# plt.show()\n#\n# mse = mean_squared_error(y_test, y_pred)\n# r2 = r2_score(y_test, y_pred)\n# n = len(y_test)\n# p = X_test.shape[1]\n# adjusted_r2 = 1 - (1 - r2) * (n - 1) / (n - p - 1) if n > p + 1 else None\n#\n# print()\n# print(\"【模型评价】\")\n# print(\"均方误差 MSE：\", mse)\n# print(\"R²：\", r2)\n# print(\"调整 R²：\", adjusted_r2)\n\n## 第九步：输出回归摘要到“表格数据（DataFrame）”卡片\n# summary_rows = [\n#     {\"指标\": \"样本数\", \"值\": int(len(model_df))},\n#     {\"指标\": \"训练集样本数\", \"值\": int(len(X_train))},\n#     {\"指标\": \"测试集样本数\", \"值\": int(len(X_test))},\n#     {\"指标\": \"截距\", \"值\": intercept},\n#     {\"指标\": \"系数\", \"值\": coef},\n#     {\"指标\": \"线性函数\", \"值\": f\"{y_col} = {coef:.6f} * {x_col} + {intercept:.6f}\"},\n#     {\"指标\": \"均方误差 MSE\", \"值\": float(mse)},\n#     {\"指标\": \"R²\", \"值\": float(r2)},\n#     {\"指标\": \"调整 R²\", \"值\": None if adjusted_r2 is None else float(adjusted_r2)},\n# ]\n# summary_df = pd.DataFrame(summary_rows)\n#\n# print()\n# print(\"【回归摘要表】\")\n# print(summary_df)\n# print(\"__TABLE_JSON__=\" + json.dumps(summary_df.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n\n## 第十步：更完整的回归结果摘要（渲染到下方表格卡片）\n# X2 = sm.add_constant(X)\n# model_sm = sm.OLS(y, X2).fit()\n#\n# print()\n# print(\"【回归结果摘要】\")\n# summary_text = model_sm.summary().as_text().split(\"\\\\nNotes:\")[0]\n# print(summary_text)\n#\n# coef_df = pd.DataFrame({\n#     \"变量\": model_sm.params.index,\n#     \"系数\": model_sm.params.values,\n#     \"标准误\": model_sm.bse.values,\n#     \"t值\": model_sm.tvalues.values,\n#     \"P>|t|\": model_sm.pvalues.values,\n#     \"置信区间下限(95%)\": model_sm.conf_int().iloc[:, 0].values,\n#     \"置信区间上限(95%)\": model_sm.conf_int().iloc[:, 1].values,\n# })\n#\n# print(\"__TABLE_JSON__=\" + json.dumps(coef_df.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n\n## 第十一步：残差分析（中文图示）\n# residuals = y_test - y_pred\n#\n# plt.figure(figsize=(8, 5))\n# plt.scatter(y_pred, residuals, alpha=0.7)\n# plt.axhline(y=0, color=\"red\", linestyle=\"--\")\n# plt.xlabel(\"预测值\")\n# plt.ylabel(\"残差\")\n# plt.title(\"残差分析图\")\n# plt.tight_layout()\n# plt.show()\n",
+    "import_config": {
+      "fixed_imports": [
+        "import json"
+      ],
+      "optional_imports": [
+        "import pandas as pd",
+        "import numpy as np",
+        "import matplotlib.pyplot as plt",
+        "from sqlalchemy import create_engine",
+        "from sklearn.model_selection import train_test_split",
+        "from sklearn.linear_model import LinearRegression",
+        "from sklearn.metrics import mean_squared_error, r2_score",
+        "import statsmodels.api as sm"
+      ],
+      "allow_custom_import": false
+    },
+    "allow_edit_generated_code": true,
+    "sort_order": 5,
+    "is_active": true,
+    "is_published": true,
+    "open_at": "2026-04-22T06:41:00.000Z",
+    "due_at": "2026-05-08T15:59:00.000Z"
+  }
+}

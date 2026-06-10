@@ -39,7 +39,82 @@
     <template v-else>
       <article class="panel params-panel">
         <h3>参数设置（guided template）</h3>
-        <div class="params-grid">
+        <div v-if="templateGroups.length > 0" class="stage-groups">
+          <article v-for="group in templateGroups" :key="group.id" class="stage-card">
+            <div class="stage-card-head">
+              <div>
+                <h4>{{ group.title }}</h4>
+                <p v-if="group.description">{{ group.description }}</p>
+              </div>
+              <button class="btn primary" :disabled="isBusy || !canTemplateActions" @click="applyTemplateGroupToCode(group)">
+                {{ group.applyLabel }}
+              </button>
+            </div>
+            <div class="params-grid">
+              <label v-for="field in group.fields" :key="`${group.id}-${field.name}`" class="field">
+                <span :title="`${field.label}（${field.name}）`">{{ field.label }}（{{ field.name }}）</span>
+                <select
+                  v-if="field.type === 'select'"
+                  v-model="templateForm[field.name]"
+                  :title="resolveTemplateSelectTitle(field)"
+                  :disabled="isBusy || !canTemplateActions"
+                >
+                  <option value="">{{ field.placeholder || "请选择" }}</option>
+                  <option v-for="item in field.options" :key="`${field.name}-${item.value}`" :value="item.value">{{ item.label }}</option>
+                </select>
+                <div v-else-if="field.type === 'password'" class="password-input-wrap">
+                  <input
+                    v-model="templateForm[field.name]"
+                    :type="isTemplatePasswordVisible(field.name) ? 'text' : 'password'"
+                    :placeholder="field.placeholder"
+                    :disabled="isBusy || !canTemplateActions"
+                  />
+                  <button
+                    type="button"
+                    class="password-toggle"
+                    :disabled="isBusy || !canTemplateActions"
+                    :aria-label="isTemplatePasswordVisible(field.name) ? '隐藏密码' : '显示密码'"
+                    :title="isTemplatePasswordVisible(field.name) ? '隐藏密码' : '显示密码'"
+                    @click.prevent="toggleTemplatePasswordVisibility(field.name)"
+                  >
+                    <svg v-if="isTemplatePasswordVisible(field.name)" viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M12 5.5c5.7 0 9.8 3.6 11 8.3a1 1 0 0 1 0 .4c-1.2 4.7-5.3 8.3-11 8.3S2.2 19 1 14.2a1 1 0 0 1 0-.4C2.2 9.1 6.3 5.5 12 5.5Zm0 2c-4.6 0-7.8 3-8.9 6.5 1.1 3.5 4.3 6.5 8.9 6.5 4.6 0 7.8-3 8.9-6.5-1.1-3.5-4.3-6.5-8.9-6.5Zm0 2.5a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"
+                      />
+                    </svg>
+                    <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M3 3.7 20.3 21l-1.4 1.4-3.1-3.1A12.9 12.9 0 0 1 12 20.5C6.3 20.5 2.2 17 1 12.2a1 1 0 0 1 0-.4 10.9 10.9 0 0 1 5.4-6.7L1.6 4.4 3 3.7Zm6.2 6.2a3.9 3.9 0 0 0 5 5l-5-5Zm2.8-6.4c5.7 0 9.8 3.6 11 8.3a1 1 0 0 1 0 .4 11 11 0 0 1-5.6 6.8l-1.5-1.5a9.1 9.1 0 0 0 5-5.5c-1.1-3.5-4.3-6.5-8.9-6.5a9 9 0 0 0-3.8.8L6.8 4.8a11 11 0 0 1 5.2-1.3Zm-.1 3.1a5.9 5.9 0 0 1 5.9 5.9c0 .8-.2 1.6-.5 2.3l-1.6-1.6a3.9 3.9 0 0 0-5.1-5.1L9 6.6c.7-.3 1.5-.5 2.8-.5Z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <textarea
+                  v-else-if="field.type === 'textarea'"
+                  v-model="templateForm[field.name]"
+                  rows="4"
+                  :placeholder="field.placeholder"
+                  :disabled="isBusy || !canTemplateActions"
+                ></textarea>
+                <input
+                  v-else
+                  v-model="templateForm[field.name]"
+                  :type="resolveInputType(field)"
+                  :min="field.type === 'number' && field.min !== null ? field.min : undefined"
+                  :max="field.type === 'number' && field.max !== null ? field.max : undefined"
+                  :step="field.type === 'number' && field.step !== null ? field.step : undefined"
+                  :placeholder="field.placeholder"
+                  :disabled="isBusy || !canTemplateActions"
+                />
+              </label>
+            </div>
+          </article>
+          <label class="field">
+            <span>模板类型（template_type）</span>
+            <input :value="experiment?.template_type || '-'" type="text" disabled />
+          </label>
+        </div>
+        <div v-else class="params-grid">
           <label v-for="field in templateFields" :key="field.name" class="field">
             <span :title="`${field.label}（${field.name}）`">{{ field.label }}（{{ field.name }}）</span>
             <select
@@ -330,6 +405,7 @@ const accessRestriction = ref({
 
 const templateForm = reactive({});
 const templateFields = ref([]);
+const templateGroups = ref([]);
 const originalTemplateCode = ref("");
 const fixedImports = ref([]);
 const optionalImports = ref([]);
@@ -734,6 +810,43 @@ function extractTemplateFields(schemaValue) {
   return rawFields.map(normalizeTemplateField).filter(Boolean);
 }
 
+function normalizeTemplateGroup(group, fieldMap, index) {
+  if (!group || typeof group !== "object") {
+    return null;
+  }
+  const id = String(group.id ?? `group_${index + 1}`).trim() || `group_${index + 1}`;
+  const title = String(group.title ?? `阶段 ${index + 1}`).trim() || `阶段 ${index + 1}`;
+  const description = typeof group.description === "string" ? group.description.trim() : "";
+  const applyLabel = String(group.apply_label ?? group.applyLabel ?? "应用本阶段参数到代码").trim() || "应用本阶段参数到代码";
+  const rawFieldRefs = Array.isArray(group.fields) ? group.fields : [];
+  const fields = rawFieldRefs
+    .map((item) => {
+      if (typeof item === "string") {
+        return fieldMap.get(item.trim());
+      }
+      if (item && typeof item === "object") {
+        const name = String(item.name ?? "").trim();
+        return fieldMap.get(name);
+      }
+      return null;
+    })
+    .filter(Boolean);
+  if (fields.length === 0) {
+    return null;
+  }
+  return { id, title, description, applyLabel, fields };
+}
+
+function extractTemplateGroups(schemaValue, fields) {
+  const schema = schemaValue && typeof schemaValue === "object" ? schemaValue : {};
+  const rawGroups = Array.isArray(schema.groups) ? schema.groups : [];
+  if (rawGroups.length === 0) {
+    return [];
+  }
+  const fieldMap = new Map(fields.map((field) => [field.name, field]));
+  return rawGroups.map((group, index) => normalizeTemplateGroup(group, fieldMap, index)).filter(Boolean);
+}
+
 function resolveInputType(field) {
   if (field?.type === "number") return "number";
   return "text";
@@ -828,6 +941,10 @@ function validateTemplateConfiguration(experimentDetail) {
       return { valid: false, message: `该实验模板尚未配置完整：下拉字段 ${field.name} 缺少 options` };
     }
   }
+  const groups = extractTemplateGroups(schema, fields);
+  if (Array.isArray(schema.groups) && schema.groups.length > 0 && groups.length === 0) {
+    return { valid: false, message: "该实验模板尚未配置完整：template_schema.groups 未引用有效字段" };
+  }
 
   const codeTemplate = experimentDetail?.code_template;
   if (typeof codeTemplate !== "string" || !codeTemplate.trim()) {
@@ -859,6 +976,7 @@ function validateTemplateConfiguration(experimentDetail) {
 function applyTemplateSchemaDefaults(schemaValue) {
   const fields = extractTemplateFields(schemaValue);
   templateFields.value = fields;
+  templateGroups.value = extractTemplateGroups(schemaValue, fields);
   Object.keys(templateForm).forEach((key) => {
     delete templateForm[key];
   });
@@ -1205,12 +1323,12 @@ function replaceTemplateToken(sourceCode, key, value) {
   return sourceCode.replace(pattern, value);
 }
 
-function hasAnyTemplateToken(sourceCode) {
+function hasAnyTemplateToken(sourceCode, fields = templateFields.value) {
   const text = String(sourceCode || "");
   if (!text) {
     return false;
   }
-  const tokenKeys = ["imports", "headers_block", "user_agent", ...templateFields.value.map((field) => field.name)];
+  const tokenKeys = ["imports", "headers_block", "user_agent", ...fields.map((field) => field.name)];
   return tokenKeys.some((key) => {
     const pattern = new RegExp(`\\{\\{\\s*${escapeRegExp(key)}\\s*\\}\\}`);
     return pattern.test(text);
@@ -1229,8 +1347,8 @@ function serializeTemplateFieldValue(field, rawValue) {
   return escapePyString(textValue);
 }
 
-function validateTemplateFormValues() {
-  for (const field of templateFields.value) {
+function validateTemplateFormValues(fields = templateFields.value) {
+  for (const field of fields) {
     const textValue = resolveTemplateFieldTextValue(field);
     if (field.required && !textValue) {
       throw new Error(`${field.label}不能为空`);
@@ -1253,37 +1371,44 @@ function validateTemplateFormValues() {
   }
 }
 
-function applyTemplateValue(templateCode, importStatements) {
+function applyTemplateValue(templateCode, importStatements, fields = templateFields.value, options = {}) {
   const importBlock = importStatements.join("\n");
   let code = normalizeLegacyHeadersTemplate(templateCode);
-  for (const field of templateFields.value) {
+  for (const field of fields) {
     code = replaceTemplateToken(code, field.name, serializeTemplateFieldValue(field, resolveTemplateFieldRawValue(field)));
   }
   code = replaceTemplateToken(code, "headers_block", resolveHeadersBlock());
   code = replaceTemplateToken(code, "user_agent", escapePyString(resolveSelectedUserAgentValue()));
   if (/\{\{\s*imports\s*\}\}/.test(code)) {
     code = replaceTemplateToken(code, "imports", importBlock);
-  } else {
+  } else if (options.prependImportsIfMissing !== false) {
     code = `${importBlock}\n\n${code}`;
   }
   return code;
 }
 
-async function applyTemplateToCode() {
+async function applyTemplateFieldsToCode(
+  fields = templateFields.value,
+  successMessage = "参数与导入库已应用到代码，可继续手动修改后运行/保存/提交。",
+  options = {},
+) {
   templateError.value = "";
   templateMessage.value = "";
   try {
     if (!ensureTemplateActionsAllowed()) {
       return;
     }
-    validateTemplateFormValues();
+    validateTemplateFormValues(fields);
     if (!hasEditorContent.value) {
       throw new Error("请先点击“加载骨架模板代码”或“恢复默认骨架模板代码”");
     }
     const imports = await buildImportStatements();
     let baseCode = currentCode.value;
     let useSkeletonFallback = false;
-    if (!hasAnyTemplateToken(baseCode)) {
+    if (!hasAnyTemplateToken(baseCode, fields)) {
+      if (options.allowSkeletonFallback === false) {
+        throw new Error("当前代码中未检测到本阶段占位符，请确认已加载骨架模板，或重新恢复默认骨架后再应用。");
+      }
       const skeletonCode = getTemplateContent();
       if (!skeletonCode.trim()) {
         throw new Error("当前代码缺少模板占位符，且未找到可用骨架模板代码");
@@ -1291,14 +1416,32 @@ async function applyTemplateToCode() {
       baseCode = skeletonCode;
       useSkeletonFallback = true;
     }
-    const generatedCode = applyTemplateValue(baseCode, imports);
+    const generatedCode = applyTemplateValue(baseCode, imports, fields, {
+      prependImportsIfMissing: options.prependImportsIfMissing,
+    });
     setEditorValue(generatedCode, { markAsSaved: false });
     templateMessage.value = useSkeletonFallback
       ? "当前代码中未检测到模板占位符，已基于骨架模板重新应用参数。"
-      : "参数与导入库已应用到代码，可继续手动修改后运行/保存/提交。";
+      : successMessage;
   } catch (error) {
     templateError.value = error.message || "应用参数失败";
   }
+}
+
+async function applyTemplateToCode() {
+  await applyTemplateFieldsToCode();
+}
+
+async function applyTemplateGroupToCode(group) {
+  const fields = Array.isArray(group?.fields) ? group.fields : [];
+  if (fields.length === 0) {
+    templateError.value = "该阶段没有可应用的参数字段";
+    return;
+  }
+  await applyTemplateFieldsToCode(fields, `${group.title}参数已应用到代码，可继续运行或保存。`, {
+    allowSkeletonFallback: false,
+    prependImportsIfMissing: false,
+  });
 }
 
 function confirmBeforeTemplateOverride(confirmText) {
@@ -1412,6 +1555,7 @@ async function loadExperimentAndCode() {
     delete templateForm[key];
   });
   templateFields.value = [];
+  templateGroups.value = [];
   originalTemplateCode.value = "";
   fixedImports.value = [];
   optionalImports.value = [];
@@ -1941,6 +2085,45 @@ onBeforeUnmount(() => {
 
 .params-panel h3 {
   margin: 0;
+}
+
+.stage-groups {
+  margin-top: 12px;
+  display: grid;
+  gap: 12px;
+}
+
+.stage-card {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface-2);
+  padding: 12px;
+}
+
+.stage-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.stage-card-head h4 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 16px;
+}
+
+.stage-card-head p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.stage-card-head .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .params-grid {

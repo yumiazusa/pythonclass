@@ -1,7 +1,7 @@
 {
   "file_type": "pythonclass_experiment_config",
   "version": 1,
-  "exported_at": "2026-05-28T08:16:00.978428+00:00",
+  "exported_at": "2026-06-09T03:06:07.862Z",
   "experiment_config": {
     "title": "实验9：熟悉大数据可视化技术",
     "slug": "exp-big-data-visualization-business-analysis",
@@ -87,7 +87,7 @@
               "value": "product_profit_barh"
             },
             {
-              "label": "复合图：销售渠道 + 销售收入/回款金额/回款率，比较渠道收入与回款效率",
+              "label": "分组柱状图：销售渠道 + 销售收入/回款金额，比较渠道回款表现",
               "value": "channel_collection_grouped"
             }
           ],

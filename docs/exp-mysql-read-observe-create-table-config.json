@@ -1,0 +1,265 @@
+{
+  "file_type": "pythonclass_experiment_config",
+  "version": 1,
+  "exported_at": "2026-06-09T06:26:09.293Z",
+  "experiment_config": {
+    "title": "实验3：数据库设计字段属性及数据存表",
+    "slug": "exp-mysql-read-observe-create-table",
+    "description": "使用Python从MySQL读取原始数据表，观察数据基本情况，并为新表设置字段属性后存入个人数据库。",
+    "instruction_content": "# 实验3：MySQL读表、观察数据并设计字段属性存表\n\n---\n\n## 一、实验目标\n\n通过本实验，你需要掌握：\n\n- 使用 Python 连接 MySQL 数据库\n- 从指定数据表中读取数据\n- 使用 pandas 观察数据内容、字段类型、数据维度和缺失值情况\n- 根据数据特点为新表设置字段属性\n- 将数据原样存入个人 MySQL 数据库中\n\n---\n\n## 二、实验任务\n\n请完成以下任务：\n\n1. 使用个人 MySQL 账号连接数据库\n2. 从 `myclass2025` 库中的 `baojie_dirty_raw` 表读取数据\n3. 输出：\n   - `df.head()`\n   - `df.info()`\n   - `df.shape`\n   - `df.isnull().sum()`\n4. 根据字段特点，为新表字段选择合适的数据类型\n5. 在个人数据库中创建目标表\n6. 将原始数据写入目标表\n\n---\n\n## 三、实验要求\n\n- 必须正确填写数据库用户名和密码\n- 必须成功读取原始数据表\n- 必须正确输出数据观察结果\n- 必须为新表设置字段属性\n- 必须成功创建新表并完成数据写入\n- 当前实验暂不进行数据清洗\n\n---\n\n## 四、操作步骤\n\n1. 填写数据库连接信息\n2. 设置目标表名称\n3. 设置展示前几条\n4. 选择需要导入的库\n5. 为字段选择数据类型\n6. 点击“加载骨架模板代码”\n7. 点击“应用参数到代码”\n8. 根据提示逐步运行代码\n9. 成功后提交实验\n\n---\n\n## 五、注意事项\n\n- 本实验源库固定为：`myclass2025`\n- 本实验源表固定为：`baojie_dirty_raw`\n- 个人数据库名、用户名和密码请填写你自己的账号信息\n- 请先观察数据，再思考字段类型\n- 当前实验不做数据清洗，下一个实验将继续完成清洗与优化存表\n\n---\n\n## 六、提示\n\n本实验涉及：\n- pandas\n- pymysql\n- DataFrame 基本观察方法\n- MySQL 建表与插入",
+    "starter_code": null,
+    "interaction_mode": "guided_template",
+    "template_type": "mysql_read_observe_create_table",
+    "template_schema": {
+      "fields": [
+        {
+          "name": "raw_db_name",
+          "type": "text",
+          "label": "源数据库名",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：ourclass2024（数据源库名）"
+        },
+        {
+          "name": "raw_tb_name",
+          "type": "text",
+          "label": "源数据表",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：spm_order（表名）"
+        },
+        {
+          "name": "db_name",
+          "type": "text",
+          "label": "个人数据库名",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：20221212（通常为你的学生账号）"
+        },
+        {
+          "name": "db_user",
+          "type": "text",
+          "label": "数据库用户名",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：20221212"
+        },
+        {
+          "name": "db_password",
+          "type": "password",
+          "label": "数据库密码",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：s20221212"
+        },
+        {
+          "name": "target_table",
+          "type": "text",
+          "label": "目标表名称",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：baojie_raw_copy"
+        },
+        {
+          "max": 50,
+          "min": 1,
+          "name": "preview_count",
+          "type": "number",
+          "label": "展示前几条",
+          "default": null,
+          "required": true,
+          "placeholder": "例如：10"
+        },
+        {
+          "name": "record_id_type",
+          "type": "select",
+          "label": "record_id 字段类型",
+          "default": "",
+          "options": [
+            {
+              "label": "INT",
+              "value": "INT"
+            },
+            {
+              "label": "BIGINT",
+              "value": "BIGINT"
+            },
+            {
+              "label": "VARCHAR(20)",
+              "value": "VARCHAR(20)"
+            }
+          ],
+          "required": true
+        },
+        {
+          "name": "revenue_type",
+          "type": "select",
+          "label": "revenue 字段类型",
+          "default": "",
+          "options": [
+            {
+              "label": "DECIMAL(12,1)",
+              "value": "DECIMAL(12,1)"
+            },
+            {
+              "label": "FLOAT",
+              "value": "FLOAT"
+            },
+            {
+              "label": "VARCHAR(50)",
+              "value": "VARCHAR(50)"
+            }
+          ],
+          "required": true
+        },
+        {
+          "name": "reach_type",
+          "type": "select",
+          "label": "reach 字段类型",
+          "default": "",
+          "options": [
+            {
+              "label": "INT",
+              "value": "INT"
+            },
+            {
+              "label": "DECIMAL(12,1)",
+              "value": "DECIMAL(12,1)"
+            },
+            {
+              "label": "VARCHAR(20)",
+              "value": "VARCHAR(20)"
+            }
+          ],
+          "required": true
+        },
+        {
+          "name": "local_tv_type",
+          "type": "select",
+          "label": "local_tv 字段类型",
+          "default": "",
+          "options": [
+            {
+              "label": "DECIMAL(12,1)",
+              "value": "DECIMAL(12,1)"
+            },
+            {
+              "label": "FLOAT",
+              "value": "FLOAT"
+            },
+            {
+              "label": "VARCHAR(50)",
+              "value": "VARCHAR(50)"
+            }
+          ],
+          "required": true
+        },
+        {
+          "name": "online_type",
+          "type": "select",
+          "label": "online 字段类型",
+          "default": "",
+          "options": [
+            {
+              "label": "INT",
+              "value": "INT"
+            },
+            {
+              "label": "DECIMAL(12,1)",
+              "value": "DECIMAL(12,1)"
+            },
+            {
+              "label": "VARCHAR(20)",
+              "value": "VARCHAR(20)"
+            }
+          ],
+          "required": true
+        },
+        {
+          "name": "instore_type",
+          "type": "select",
+          "label": "instore 字段类型",
+          "default": "",
+          "options": [
+            {
+              "label": "INT",
+              "value": "INT"
+            },
+            {
+              "label": "DECIMAL(10,1)",
+              "value": "DECIMAL(10,1)"
+            },
+            {
+              "label": "VARCHAR(20)",
+              "value": "VARCHAR(20)"
+            }
+          ],
+          "required": true
+        },
+        {
+          "name": "person_type",
+          "type": "select",
+          "label": "person 字段类型",
+          "default": "",
+          "options": [
+            {
+              "label": "INT",
+              "value": "INT"
+            },
+            {
+              "label": "DECIMAL(10,1)",
+              "value": "DECIMAL(10,1)"
+            },
+            {
+              "label": "VARCHAR(20)",
+              "value": "VARCHAR(20)"
+            }
+          ],
+          "required": true
+        },
+        {
+          "name": "event_type",
+          "type": "select",
+          "label": "event 字段类型",
+          "default": "",
+          "options": [
+            {
+              "label": "VARCHAR(20)",
+              "value": "VARCHAR(20)"
+            },
+            {
+              "label": "VARCHAR(30)",
+              "value": "VARCHAR(30)"
+            },
+            {
+              "label": "TEXT",
+              "value": "TEXT"
+            }
+          ],
+          "required": true
+        }
+      ]
+    },
+    "code_template": "# ========================\n# 实验3：MySQL读表、观察数据并设计字段属性存表\n# ========================\n\n{{imports}}\n\nengine = create_engine(\n    f\"mysql+pymysql://{{db_user}}:{{db_password}}@127.0.0.1:3306/{{db_name}}?charset=utf8mb4\"\n)\n\n## 第二步：设置源库和源表（固定）\nsource_db = \"{{raw_db_name}}\"\nsource_table = \"baojie_dirty_raw\"\n\n## 第三步：读取源表数据\nquery = f\"SELECT * FROM {source_db}.{source_table}\"\ndf = pd.read_sql(query, engine)\n\n## 第四步：查看前N条数据\npreview_count = int({{preview_count}})\nprint()\nprint(\"【前几条数据】\")\nprint(df.head(preview_count))\n\n## 第五步：查看二维表预览（供前端结果表格展示）\ntable_rows = df.head(preview_count).to_dict(orient=\"records\")\nprint(\"__TABLE_JSON__=\" + json.dumps(table_rows, ensure_ascii=False, default=str))\n\n## ========================\n## 以下步骤将根据课程进度逐步开放\n## 当前先不要取消注释\n## ========================\n\n## 第六步：查看数据基本信息\n# print()\n# print(\"【数据基本信息】\")\n# df.info()\n\n## 第七步：查看数据维度\n# print()\n# print(\"【数据维度】\")\n# print(df.shape)\n\n## 第八步：查看缺失值统计\n# print()\n# print(\"【缺失值统计】\")\n# print(df.isnull().sum())\n\n## 第八步补充：检查重复行\n# print()\n# print(\"【重复行统计】\")\n# dup_count = df.duplicated().sum()\n# print(\"重复行数：\", dup_count)\n\n## 第九步：字段名转中文（原字段 -> 中文字段）\n# df = df.rename(columns={\n#     \"Unnamed: 0\": \"序号\",\n#     \"unnamed\": \"序号\",\n#     \"record_id\": \"序号\",\n#     \"Revenue\": \"门店销售额\",\n#     \"revenue\": \"门店销售额\",\n#     \"Reach\": \"微信推送次数\",\n#     \"reach\": \"微信推送次数\",\n#     \"Loval_tv\": \"本地电视广告投入\",\n#     \"loval_tv\": \"本地电视广告投入\",\n#     \"Local_tv\": \"本地电视广告投入\",\n#     \"local_tv\": \"本地电视广告投入\",\n#     \"Online\": \"线上广告投入\",\n#     \"online\": \"线上广告投入\",\n#     \"Instore\": \"门店内广告投入\",\n#     \"instore\": \"门店内广告投入\",\n#     \"Person\": \"门店销售人员投入\",\n#     \"person\": \"门店销售人员投入\",\n#     \"Event\": \"门店促销事件\",\n#     \"event\": \"门店促销事件\"\n# })\n\n## ========================\n## 以下内容为下一个阶段实验内容\n## 当前先不要取消注释\n## ========================\n\n## 第十步：设计并创建新表（中文字段名）\n# target_table = \"{{target_table}}\"\n#\n# create_sql = \"\"\"\n# CREATE TABLE IF NOT EXISTS {{target_table}} (\n#     `序号` {{record_id_type}},\n#     `门店销售额` {{revenue_type}},\n#     `微信推送次数` {{reach_type}},\n#     `本地电视广告投入` {{local_tv_type}},\n#     `线上广告投入` {{online_type}},\n#     `门店内广告投入` {{instore_type}},\n#     `门店销售人员投入` {{person_type}},\n#     `门店促销事件` {{event_type}}\n# )\n# \"\"\"\n#\n# with engine.begin() as conn:\n#     conn.exec_driver_sql(f\"DROP TABLE IF EXISTS {target_table}\")\n#     conn.exec_driver_sql(create_sql)\n#\n# print()\n# print(\"【新表创建成功】\")\n# print(\"目标表：\", target_table)\n\n## 第十一步：将原始数据写入新表（中文字段名）\n# target_table = \"{{target_table}}\"\n# insert_sql = f\"\"\"\n# INSERT INTO {target_table}\n# (`序号`, `门店销售额`, `微信推送次数`, `本地电视广告投入`, `线上广告投入`, `门店内广告投入`, `门店销售人员投入`, `门店促销事件`)\n# VALUES (%s, %s, %s, %s, %s, %s, %s, %s)\n# \"\"\"\n#\n# inserted_count = 0\n# with engine.begin() as conn:\n#     for _, row in df.iterrows():\n#         conn.exec_driver_sql(\n#             insert_sql,\n#             (\n#                 row.get(\"序号\"),\n#                 row.get(\"门店销售额\"),\n#                 row.get(\"微信推送次数\"),\n#                 row.get(\"本地电视广告投入\"),\n#                 row.get(\"线上广告投入\"),\n#                 row.get(\"门店内广告投入\"),\n#                 row.get(\"门店销售人员投入\"),\n#                 row.get(\"门店促销事件\")\n#             )\n#         )\n#         inserted_count += 1\n#\n# print()\n# print(\"【数据写入完成】\")\n# print(\"已将原始数据写入目标表：\", target_table)\n# print(\"写入行数：\", inserted_count)\n",
+    "import_config": {
+      "fixed_imports": [
+        "import json"
+      ],
+      "optional_imports": [
+        "import pandas as pd",
+        "import numpy as np",
+        "import pymysql",
+        "from sqlalchemy import create_engine",
+        "import matplotlib.pyplot as plt",
+        "import seaborn as sns"
+      ],
+      "allow_custom_import": true
+    },
+    "allow_edit_generated_code": true,
+    "sort_order": 3,
+    "is_active": true,
+    "is_published": true,
+    "open_at": "2026-04-09T00:09:00.000Z",
+    "due_at": "2026-05-08T15:59:00.000Z"
+  }
+}

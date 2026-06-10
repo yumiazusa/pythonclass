@@ -1,0 +1,23 @@
+{
+  "file_type": "pythonclass_experiment_config",
+  "version": 1,
+  "exported_at": "2026-06-09T06:25:53.189Z",
+  "experiment_config": {
+    "title": "实验1：python基础数据类型",
+    "slug": "exp-01-python-basic-data-types",
+    "description": "复习Python基础数据类型（整数、浮点数、字符串、元组、列表、字典），掌握变量定义与基本输出方法。",
+    "instruction_content": "---\n\n## 一、实验目标\n\n通过本实验，你需要掌握：\n\n- Python中常见的数据类型\n- 如何定义变量\n- 如何使用print输出结果\n\n---\n\n## 二、实验内容\n\n请完成以下任务：\n\n1. 定义整数变量\n2. 定义浮点数变量\n3. 定义字符串变量\n4. 定义元组\n5. 定义列表\n6. 定义字典\n7. 使用print输出所有变量\n\n---\n\n## 三、实验要求\n\n- 每种数据类型必须正确赋值\n- 输出结果必须完整\n- 不要删除已有代码结构\n\n---\n\n## 四、示例说明\n\n例如：\n\n```python\na = 10\nprint(a)",
+    "starter_code": "# ========================\n# 实验1：Python基础数据类型\n# ========================\n\n# 1. 整数（int）\n# 请给变量赋一个整数值，例如：10\nint_var = \n\n# 2. 浮点数（float）\n# 请给变量赋一个小数，例如：3.14\nfloat_var = \n\n# 3. 字符串（str）\n# 请给变量赋一个字符串，例如：\"hello\"\nstr_var = \n\n# 4. 元组（tuple）\n# 请定义一个元组，例如：(1, 2, 3)\ntuple_var = \n\n# 5. 列表（list）\n# 请定义一个列表，例如：[1, 2, 3]\nlist_var = \n\n# 6. 字典（dict）\n# 请定义一个字典，例如：{\"name\": \"张三\", \"age\": 20}\ndict_var = \n\n\n# ========================\n# 输出结果\n# ========================\n\nprint(\"整数：\", int_var)\nprint(\"浮点数：\", float_var)\nprint(\"字符串：\", str_var)\nprint(\"元组：\", tuple_var)\nprint(\"列表：\", list_var)\nprint(\"字典：\", dict_var)",
+    "interaction_mode": "native_editor",
+    "template_type": null,
+    "template_schema": null,
+    "code_template": null,
+    "import_config": null,
+    "allow_edit_generated_code": true,
+    "sort_order": 1,
+    "is_active": true,
+    "is_published": true,
+    "open_at": null,
+    "due_at": null
+  }
+}

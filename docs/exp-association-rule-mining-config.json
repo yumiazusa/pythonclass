@@ -1,0 +1,142 @@
+{
+  "file_type": "pythonclass_experiment_config",
+  "version": 1,
+  "exported_at": "2026-06-09T06:26:23.941Z",
+  "experiment_config": {
+    "title": "实验6：商品购买关联关系挖掘分析",
+    "slug": "exp-association-rule-mining",
+    "description": "读取订单明细数据，将订单商品转换为购物篮矩阵，并使用Apriori算法挖掘商品之间的关联规则",
+    "instruction_content": "---\n\n## 一、实验目标\n\n通过本实验，你需要掌握：\n\n- 理解事务数据和购物篮数据\n- 使用 pandas 整理订单明细数据\n- 将订单明细转换为购物篮矩阵\n- 使用 Apriori 算法寻找频繁项集\n- 根据支持度、置信度和提升度解释关联规则\n\n---\n\n## 二、实验任务\n\n请完成以下任务：\n\n1. 从数据库中读取订单明细表\n2. 查看订单数据基本结构\n3. 统计订单数量和商品种类\n4. 按订单号整理每个订单购买的商品\n5. 构造购物篮矩阵\n6. 使用 Apriori 算法生成频繁项集\n7. 根据频繁项集生成关联规则\n\n---\n\n## 三、实验要求\n\n- 必须正确连接数据库\n- 必须成功读取订单明细数据\n- 必须正确设置订单号字段和商品字段\n- 必须成功生成购物篮矩阵\n- 必须输出频繁项集\n- 必须输出关联规则\n\n---\n\n## 四、核心概念\n\n### 1. 支持度 support\n\n表示某个商品组合在所有订单中出现的比例。\n\n---\n\n### 2. 置信度 confidence\n\n表示购买了前件商品后，同时购买后件商品的概率。\n\n---\n\n### 3. 提升度 lift\n\n表示两个商品同时出现的关联强度。\n\n- lift > 1：存在正向关联\n- lift = 1：基本独立\n- lift < 1：可能存在负向关联\n\n---\n\n## 五、注意事项\n\n- 本实验使用订单明细数据\n- 一个订单号通常对应多个商品\n- 最小支持度过高，可能找不到频繁项集\n- 最小支持度过低，可能产生过多规则\n- 本实验主要用于理解关联分析方法",
+    "starter_code": null,
+    "interaction_mode": "guided_template",
+    "template_type": "association_rule_mining",
+    "template_schema": {
+      "fields": [
+        {
+          "name": "db_name",
+          "type": "text",
+          "label": "个人数据库名",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：2025xxxxxx"
+        },
+        {
+          "name": "db_user",
+          "type": "text",
+          "label": "数据库用户名",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：2025xxxxxx"
+        },
+        {
+          "name": "db_password",
+          "type": "password",
+          "label": "数据库密码",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：s2025xxxxxx"
+        },
+        {
+          "name": "raw_db_name",
+          "type": "text",
+          "label": "源数据库名",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：ourclass2026"
+        },
+        {
+          "name": "raw_tb_name",
+          "type": "text",
+          "label": "源数据表",
+          "default": "",
+          "required": true,
+          "placeholder": "例如：sales_orders_raw"
+        },
+        {
+          "name": "order_col",
+          "type": "select",
+          "label": "订单号字段",
+          "options": [
+            {
+              "label": "订单号",
+              "value": "订单号"
+            }
+          ],
+          "required": true
+        },
+        {
+          "name": "item_col",
+          "type": "select",
+          "label": "商品字段",
+          "options": [
+            {
+              "label": "商品",
+              "value": "商品"
+            }
+          ],
+          "required": true
+        },
+        {
+          "max": 50,
+          "min": 1,
+          "name": "preview_count",
+          "type": "number",
+          "label": "展示前几条",
+          "default": 10,
+          "required": true,
+          "placeholder": "例如：10"
+        },
+        {
+          "max": 1,
+          "min": 0.01,
+          "name": "min_support",
+          "type": "number",
+          "label": "最小支持度",
+          "default": 0.15,
+          "required": true,
+          "placeholder": "例如：0.15"
+        },
+        {
+          "max": 1,
+          "min": 0.01,
+          "name": "min_confidence",
+          "type": "number",
+          "label": "最小置信度",
+          "default": 0.5,
+          "required": true,
+          "placeholder": "例如：0.5"
+        },
+        {
+          "max": 50,
+          "min": 1,
+          "name": "top_n_rules",
+          "type": "number",
+          "label": "展示前几条规则",
+          "default": 10,
+          "required": true,
+          "placeholder": "例如：10"
+        }
+      ]
+    },
+    "code_template": "# ========================\n# 实验6：商品购买关联关系挖掘分析\n# ========================\n\n{{imports}}\n\n# 第一步：连接个人数据库\nengine = create_engine(\n    f\"mysql+pymysql://{{db_user}}:{{db_password}}@127.0.0.1:3306/{{db_name}}?charset=utf8mb4\"\n)\n\n# 第二步：设置源库和源表\nsource_db = \"{{raw_db_name}}\"\nsource_table = \"{{raw_tb_name}}\"\n\n# 第三步：读取订单明细数据\nquery = f\"SELECT * FROM {source_db}.{source_table}\"\ndf = pd.read_sql(query, engine)\n\n# 第四步：查看前N条数据\npreview_count = int({{preview_count}})\nprint(\"【订单明细数据前几行】\")\nprint(df.head(preview_count))\n\n# 二维表预览\ntable_rows = df.head(preview_count).to_dict(orient=\"records\")\nprint(\"__TABLE_JSON__=\" + json.dumps(table_rows, ensure_ascii=False, default=str))\n\n# 第五步：查看数据规模\nprint()\nprint(\"【数据规模】\")\nprint(\"明细行数：\", len(df))\nprint(\"订单数量：\", df[\"{{order_col}}\"].nunique())\nprint(\"商品种类：\", df[\"{{item_col}}\"].nunique())\n\n# ========================\n# 以下步骤将根据课程进度逐步开放\n# 当前可从第六步开始带学生逐步取消注释\n# ========================\n\n## 第六步：按订单号和商品构造购物篮矩阵\n## 购物篮矩阵含义：\n## - 每一行表示一个订单\n## - 每一列表示一种商品\n## - 1 表示该订单购买了该商品\n## - 0 表示该订单没有购买该商品\n##\n# basket = (\n#     df.groupby([\"{{order_col}}\", \"{{item_col}}\"])\n#       .size()\n#       .unstack(fill_value=0)\n# )\n#\n# basket = basket.apply(pd.to_numeric, errors=\"coerce\").fillna(0).gt(0).astype(int)\n#\n# print()\n# print(\"【购物篮矩阵前几行】\")\n# print(basket.head(preview_count))\n#\n# basket_rows = basket.head(preview_count).reset_index().to_dict(orient=\"records\")\n# print(\"__TABLE_JSON__=\" + json.dumps(basket_rows, ensure_ascii=False, default=str))\n\n## 第七步：使用 Apriori 算法生成频繁项集\n## min_support 表示最小支持度（出现概率）\n#\n# frequent_itemsets = apriori(\n#     basket.astype(bool),\n#     min_support={{min_support}},\n#     use_colnames=True\n# )\n#\n# frequent_itemsets = frequent_itemsets.sort_values(\n#     by=\"support\",\n#     ascending=False\n# )\n#\n# print()\n# print(\"【频繁项集】\")\n# print(frequent_itemsets.head(20))\n#\n# itemset_rows = frequent_itemsets.head(20).copy()\n# itemset_rows[\"itemsets\"] = itemset_rows[\"itemsets\"].apply(lambda x: \",\".join(list(x)))\n# print(\"__TABLE_JSON__=\" + json.dumps(itemset_rows.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n\n## 绘制商品或商品组合出现概率TOP 10的可视化图表\n# top_itemsets = frequent_itemsets.head(10).copy()\n# top_itemsets[\"itemsets\"] = top_itemsets[\"itemsets\"].apply(lambda x: \",\".join(list(x)))\n# plt.figure(figsize=(10, 5))\n# plt.barh(top_itemsets[\"itemsets\"], top_itemsets[\"support\"])\n# plt.xlabel(\"支持度（出现概率） support\")\n# plt.ylabel(\"频繁项集\")\n# plt.title(\"商品及商品组合出现概率Top 10\")\n# plt.gca().invert_yaxis()\n# plt.show()\n\n## 第八步：根据频繁项集生成关联规则\n## metric=\"confidence\" 表示按置信度筛选规则\n#\n# rules = association_rules(\n#     frequent_itemsets,\n#     metric=\"confidence\",\n#     min_threshold={{min_confidence}}\n# )\n#\n# rules = rules.sort_values(\n#     by=[\"lift\", \"confidence\", \"support\"],\n#     ascending=False\n# )\n#\n# print()\n# print(\"【关联规则】\")\n# display_cols = [\n#     \"antecedents\",\n#     \"consequents\",\n#     \"support\",\n#     \"confidence\",\n#     \"lift\"\n# ]\n#\n# rules_display = rules[display_cols].head(int({{top_n_rules}})).copy()\n# rules_display[\"antecedents\"] = rules_display[\"antecedents\"].apply(lambda x: \",\".join(list(x)))\n# rules_display[\"consequents\"] = rules_display[\"consequents\"].apply(lambda x: \",\".join(list(x)))\n#\n# print(\"__TABLE_JSON__=\" + json.dumps(rules_display.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n# print(rules_display)\n#\n## 关联规则可视化\n# top_rules = rules_display.copy()\n# top_rules[\"规则\"] = top_rules[\"antecedents\"] + \" → \" + top_rules[\"consequents\"]\n#\n# plt.figure(figsize=(10, 5))\n# plt.barh(top_rules[\"规则\"], top_rules[\"lift\"])\n# plt.xlabel(\"提升度 lift\")\n# plt.ylabel(\"关联规则\")\n# plt.title(\"关联规则提升度 Top 10\")\n# plt.gca().invert_yaxis()\n# plt.show()\n\n## 第九步：规则解释提示\n# print()\n# print(\"【规则解释】\")\n# print(\"support：商品及商品组合在所有订单中出现的概率\")\n# print(\"confidence：购买前件商品后，同时购买后件商品的概率\")\n# print(\"lift：前件商品对后件商品购买概率的提升度，大于1表示存在正向提升关联\")\n",
+    "import_config": {
+      "fixed_imports": [
+        "import json"
+      ],
+      "optional_imports": [
+        "import pandas as pd",
+        "from sqlalchemy import create_engine",
+        "from mlxtend.frequent_patterns import apriori",
+        "from mlxtend.frequent_patterns import association_rules",
+        "import matplotlib.pyplot as plt"
+      ],
+      "allow_custom_import": false
+    },
+    "allow_edit_generated_code": true,
+    "sort_order": 6,
+    "is_active": true,
+    "is_published": true,
+    "open_at": "2026-04-29T15:22:00.000Z",
+    "due_at": "2026-05-15T15:59:00.000Z"
+  }
+}
