@@ -3,29 +3,334 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>某市房地产信息网 - 在售房源 </title>
+<title>某市房地产信息网 - 在售房源</title>
 <style>
-  body { margin: 0; font-family: "Microsoft YaHei", Arial, sans-serif; background: #f6f9fc; color: #1f2937; }
-  header { background: #eaf4ff; border-bottom: 1px solid #cfe5fb; padding: 24px 32px; }
-  h1 { margin: 0 0 8px; font-size: 26px; color: #155e9f; }
-  .meta { color: #64748b; font-size: 14px; }
-  main { padding: 24px 32px 40px; }
-  .table-wrap { overflow: auto; border: 1px solid #d9e5f2; border-radius: 8px; background: white; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
-  th { position: sticky; top: 0; background: #eef7ff; color: #1d4e89; text-align: left; }
-  th, td { border-bottom: 1px solid #e8eef5; padding: 8px 10px; }
-  tr:nth-child(even) td { background: #fbfdff; }
+  :root {
+    color-scheme: light;
+    --page: #f4f8fc;
+    --surface: #fbfdff;
+    --surface-strong: #ffffff;
+    --line: #d7e5f2;
+    --line-soft: #e8f0f8;
+    --brand: #1f72b8;
+    --brand-deep: #15588f;
+    --brand-soft: #e7f3ff;
+    --text: #1f2a37;
+    --muted: #5f7083;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif;
+    background: var(--page);
+    color: var(--text);
+  }
+
+  .site-header {
+    background: linear-gradient(180deg, #eef8ff 0%, #f8fcff 100%);
+    border-bottom: 1px solid var(--line);
+    padding: 26px 32px 22px;
+  }
+
+  .site-header h1 {
+    margin: 0;
+    color: var(--brand-deep);
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 0;
+  }
+
+  .intro {
+    margin: 9px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .meta-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    border: 1px solid #c8def1;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+    color: #245f91;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 5px 12px;
+  }
+
+  main {
+    padding: 22px 32px 40px;
+  }
+
+  .table-tools {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+
+  .table-title {
+    display: grid;
+    gap: 4px;
+  }
+
+  .table-title strong {
+    color: var(--text);
+    font-size: 18px;
+  }
+
+  .table-title span,
+  .sort-status {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .sort-status {
+    min-width: 180px;
+    text-align: right;
+  }
+
+  .table-wrap {
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: calc(100vh - 190px);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface-strong);
+    box-shadow: 0 14px 34px rgba(39, 91, 135, 0.08);
+  }
+
+  .table-wrap.is-sorting {
+    cursor: progress;
+  }
+
+  table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: clamp(10px, 0.74vw, 12px);
+    white-space: normal;
+  }
+
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #eef7ff;
+    color: #194f82;
+    text-align: left;
+    user-select: none;
+    cursor: pointer;
+  }
+
+  th::after {
+    content: attr(data-sort-icon);
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    color: #7aa6cc;
+    font-size: 11px;
+    transform: translateY(-50%);
+  }
+
+  th:hover,
+  th:focus-visible {
+    background: #dff0ff;
+    color: var(--brand-deep);
+    outline: none;
+  }
+
+  th.is-sorted {
+    background: #d8edff;
+    color: #114c81;
+  }
+
+  th[aria-disabled="true"] {
+    cursor: progress;
+  }
+
+  th,
+  td {
+    border-bottom: 1px solid var(--line-soft);
+    line-height: 1.28;
+    padding: 6px 4px;
+    vertical-align: top;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  th {
+    padding-right: 16px;
+  }
+
+  th:nth-child(1),
+  td:nth-child(1) {
+    width: 4.3%;
+  }
+
+  th:nth-child(2),
+  td:nth-child(2) {
+    width: 3.8%;
+  }
+
+  th:nth-child(3),
+  td:nth-child(3) {
+    width: 9%;
+  }
+
+  th:nth-child(4),
+  td:nth-child(4) {
+    width: 7%;
+  }
+
+  th:nth-child(5),
+  td:nth-child(5) {
+    width: 9.5%;
+  }
+
+  th:nth-child(6),
+  td:nth-child(6) {
+    width: 9%;
+  }
+
+  th:nth-child(7),
+  td:nth-child(7) {
+    width: 6.2%;
+  }
+
+  th:nth-child(8),
+  td:nth-child(8) {
+    width: 5%;
+  }
+
+  th:nth-child(9),
+  td:nth-child(9) {
+    width: 9.2%;
+  }
+
+  th:nth-child(10),
+  td:nth-child(10) {
+    width: 7.8%;
+  }
+
+  th:nth-child(11),
+  td:nth-child(11) {
+    width: 6.4%;
+  }
+
+  th:nth-child(12),
+  td:nth-child(12) {
+    width: 8.3%;
+  }
+
+  th:nth-child(13),
+  td:nth-child(13) {
+    width: 8.3%;
+  }
+
+  th:nth-child(14),
+  td:nth-child(14) {
+    width: 6.2%;
+  }
+
+  tbody tr:nth-child(even) td {
+    background: #fbfdff;
+  }
+
+  tbody tr:hover td {
+    background: #f0f7ff;
+  }
+
+  .table-wrap.is-sorting tbody {
+    opacity: 0.72;
+  }
+
+  td:nth-child(2),
+  td:nth-child(4),
+  td:nth-child(7),
+  td:nth-child(9),
+  td:nth-child(14) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 720px) {
+    .site-header {
+      padding: 22px 18px 18px;
+    }
+
+    .site-header h1 {
+      font-size: 24px;
+    }
+
+    main {
+      padding: 18px 14px 30px;
+    }
+
+    .table-tools {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .sort-status {
+      min-width: 0;
+      text-align: left;
+    }
+
+    .table-wrap {
+      max-height: calc(100vh - 230px);
+    }
+
+    table {
+      font-size: 9px;
+    }
+
+    th,
+    td {
+      padding: 4px 2px;
+    }
+
+    th {
+      padding-right: 10px;
+    }
+  }
 </style>
 </head>
 <body>
-<header>
+<header class="site-header">
   <h1>某市房地产信息门户网</h1>
-  <div class="meta">在售房源公开数据表 · 数据量：5036 条</div>
+  <p class="intro">在售房源公开数据表，供数据获取、清洗、建模和可视化分析练习使用。</p>
+  <div class="meta-row" aria-label="数据概览">
+    <span class="meta-pill">数据量：5036 条</span>
+    <span class="meta-pill">字段数：14 个</span>
+    <span class="meta-pill">点击表头可排序</span>
+  </div>
 </header>
 <main>
+  <div class="table-tools">
+    <div class="table-title">
+      <strong>在售房源明细</strong>
+      <span>排序只改变当前页面显示顺序，不改变表格字段名和原始数据。</span>
+    </div>
+    <div id="sortStatus" class="sort-status" aria-live="polite">未排序</div>
+  </div>
   <div class="table-wrap">
-    <table>
-      <thead><tr><th>产权</th><th>关注</th><th>区域</th><th>单价</th><th>小区</th><th>年限</th><th>总价/万元</th><th>户型</th><th>房屋编码</th><th>挂牌时间</th><th>朝向</th><th>楼层</th><th>装修情况</th><th>面积</th></tr></thead>
+    <table id="houseTable" data-sort-table>
+      <thead><tr><th scope="col" data-type="text" data-sort-icon="↕" tabindex="0" aria-sort="none">产权</th><th scope="col" data-type="number" data-sort-icon="↕" tabindex="0" aria-sort="none">关注</th><th scope="col" data-type="text" data-sort-icon="↕" tabindex="0" aria-sort="none">区域</th><th scope="col" data-type="number" data-sort-icon="↕" tabindex="0" aria-sort="none">单价</th><th scope="col" data-type="text" data-sort-icon="↕" tabindex="0" aria-sort="none">小区</th><th scope="col" data-type="text" data-sort-icon="↕" tabindex="0" aria-sort="none">年限</th><th scope="col" data-type="number" data-sort-icon="↕" tabindex="0" aria-sort="none">总价/万元</th><th scope="col" data-type="text" data-sort-icon="↕" tabindex="0" aria-sort="none">户型</th><th scope="col" data-type="number" data-sort-icon="↕" tabindex="0" aria-sort="none">房屋编码</th><th scope="col" data-type="date" data-sort-icon="↕" tabindex="0" aria-sort="none">挂牌时间</th><th scope="col" data-type="text" data-sort-icon="↕" tabindex="0" aria-sort="none">朝向</th><th scope="col" data-type="text" data-sort-icon="↕" tabindex="0" aria-sort="none">楼层</th><th scope="col" data-type="text" data-sort-icon="↕" tabindex="0" aria-sort="none">装修情况</th><th scope="col" data-type="number" data-sort-icon="↕" tabindex="0" aria-sort="none">面积</th></tr></thead>
       <tbody>
         <tr><td>70年</td><td>0</td><td>临安临安</td><td>15826元/平米</td><td>钱锦花园</td><td>未知年建/板楼</td><td>210</td><td>3室2厅</td><td>103104175398</td><td>2019-03-19</td><td>南</td><td>中楼层/共24层</td><td>平层/毛坯</td><td>132.7平米</td></tr>
         <tr><td>70年</td><td>6</td><td>萧山萧山开发区</td><td>23985元/平米</td><td>花城名苑</td><td>未知年建/板楼</td><td>245</td><td>3室2厅</td><td>103103945893</td><td>2019-02-23</td><td>南</td><td>低楼层/共2层</td><td>平层/毛坯</td><td>102.15平米</td></tr>
@@ -5067,5 +5372,192 @@
     </table>
   </div>
 </main>
+<script>
+  (() => {
+    const table = document.querySelector("[data-sort-table]");
+    const status = document.querySelector("#sortStatus");
+    if (!table || !table.tHead || !table.tBodies.length) {
+      return;
+    }
+
+    const headers = Array.from(table.tHead.querySelectorAll("th"));
+    const tbody = table.tBodies[0];
+    const tableWrap = table.closest(".table-wrap");
+    const rowCache = Array.from(tbody.rows).map((row, originalIndex) => ({
+      row,
+      originalIndex,
+      values: Object.create(null),
+    }));
+    const collator = new Intl.Collator("zh-Hans-CN", {
+      numeric: true,
+      sensitivity: "base",
+    });
+    const scheduleFrame = window.requestAnimationFrame
+      ? window.requestAnimationFrame.bind(window)
+      : (callback) => window.setTimeout(callback, 0);
+    let activeColumn = -1;
+    let activeDirection = "asc";
+    let isSorting = false;
+
+    function parseNumber(text) {
+      const match = String(text || "").replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
+      return match ? Number(match[0]) : null;
+    }
+
+    function parseDate(text) {
+      const time = Date.parse(String(text || "").trim().replace(/\//g, "-"));
+      return Number.isNaN(time) ? null : time;
+    }
+
+    function parseValue(cell, type) {
+      const text = cell ? cell.textContent.trim() : "";
+      if (type === "number") {
+        return parseNumber(text);
+      }
+      if (type === "date") {
+        return parseDate(text);
+      }
+      return text;
+    }
+
+    function getCachedValue(rowData, columnIndex, type) {
+      if (!(columnIndex in rowData.values)) {
+        rowData.values[columnIndex] = parseValue(rowData.row.cells[columnIndex], type);
+      }
+      return rowData.values[columnIndex];
+    }
+
+    function compareValues(left, right, type, direction) {
+      const leftMissing = left === null || left === "";
+      const rightMissing = right === null || right === "";
+      if (leftMissing && rightMissing) {
+        return 0;
+      }
+      if (leftMissing) {
+        return 1;
+      }
+      if (rightMissing) {
+        return -1;
+      }
+
+      let result = 0;
+      if (type === "number" || type === "date") {
+        result = left === right ? 0 : left > right ? 1 : -1;
+      } else {
+        result = collator.compare(left, right);
+      }
+      return direction === "asc" ? result : -result;
+    }
+
+    function updateHeaderState(columnIndex, direction) {
+      headers.forEach((header, index) => {
+        const isActive = index === columnIndex;
+        header.classList.toggle("is-sorted", isActive);
+        header.setAttribute("aria-sort", isActive ? (direction === "asc" ? "ascending" : "descending") : "none");
+        header.dataset.sortIcon = isActive ? (direction === "asc" ? "↑" : "↓") : "↕";
+      });
+    }
+
+    function setSortingState(nextSorting, label) {
+      isSorting = nextSorting;
+      tableWrap?.classList.toggle("is-sorting", nextSorting);
+      headers.forEach((header) => {
+        header.setAttribute("aria-disabled", nextSorting ? "true" : "false");
+      });
+      if (label && status) {
+        status.textContent = label;
+      }
+    }
+
+    function renderRows(sortedRows) {
+      const parent = tbody.parentNode;
+      const nextSibling = tbody.nextSibling;
+      const scrollTop = tableWrap ? tableWrap.scrollTop : 0;
+      const fragment = document.createDocumentFragment();
+
+      if (parent) {
+        parent.removeChild(tbody);
+      }
+      sortedRows.forEach(({ row }) => fragment.appendChild(row));
+      tbody.replaceChildren(fragment);
+      if (parent) {
+        parent.insertBefore(tbody, nextSibling);
+      }
+      if (tableWrap) {
+        tableWrap.scrollTop = scrollTop;
+      }
+    }
+
+    function sortByColumn(columnIndex) {
+      if (isSorting) {
+        return;
+      }
+      const header = headers[columnIndex];
+      const type = header.dataset.type || "text";
+      const direction = activeColumn === columnIndex && activeDirection === "asc" ? "desc" : "asc";
+      activeColumn = columnIndex;
+      activeDirection = direction;
+      setSortingState(true, `${header.textContent.trim()} · 排序中...`);
+
+      scheduleFrame(() => {
+        const startedAt = performance.now();
+        const rows = rowCache.map((rowData) => ({
+          row: rowData.row,
+          originalIndex: rowData.originalIndex,
+          value: getCachedValue(rowData, columnIndex, type),
+        }));
+
+        rows.sort((left, right) => {
+          const result = compareValues(left.value, right.value, type, direction);
+          return result || left.originalIndex - right.originalIndex;
+        });
+
+        renderRows(rows);
+        updateHeaderState(columnIndex, direction);
+
+        const duration = Math.max(1, Math.round(performance.now() - startedAt));
+        setSortingState(false, `${header.textContent.trim()} · ${direction === "asc" ? "升序" : "降序"} · ${duration} ms`);
+      });
+    }
+
+    function warmColumnCache() {
+      const importantColumns = [1, 3, 6, 9, 13];
+      let columnCursor = 0;
+      let rowCursor = 0;
+
+      function warmChunk() {
+        const startedAt = performance.now();
+        while (columnCursor < importantColumns.length && performance.now() - startedAt < 8) {
+          const columnIndex = importantColumns[columnCursor];
+          const type = headers[columnIndex]?.dataset.type || "text";
+          getCachedValue(rowCache[rowCursor], columnIndex, type);
+          rowCursor += 1;
+          if (rowCursor >= rowCache.length) {
+            rowCursor = 0;
+            columnCursor += 1;
+          }
+        }
+        if (columnCursor < importantColumns.length) {
+          window.setTimeout(warmChunk, 0);
+        }
+      }
+
+      window.setTimeout(warmChunk, 80);
+    }
+
+    headers.forEach((header, index) => {
+      header.addEventListener("click", () => sortByColumn(index));
+      header.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") {
+          return;
+        }
+        event.preventDefault();
+        sortByColumn(index);
+      });
+    });
+
+    warmColumnCache();
+  })();
+</script>
 </body>
 </html>

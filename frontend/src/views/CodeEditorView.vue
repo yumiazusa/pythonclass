@@ -38,9 +38,12 @@
       </div>
     </div>
     <template v-else>
-      <div v-if="isOverdue" class="panel state-panel overdue">
+      <div v-if="isDeadlineLocked" class="panel state-panel overdue">
         <h3>本实验已截止，当前仅可查看内容</h3>
         <p>不可继续运行、保存或提交，历史记录仅支持查看。</p>
+      </div>
+      <div v-else-if="isOverdue && isPrivilegedViewer && canRun" class="panel state-panel locked">
+        本实验已截止，当前账号仍可继续运行用于教学测试。
       </div>
       <div v-if="isWorkspaceLocked" class="panel state-panel locked">{{ workspaceMessage }}</div>
       <div v-if="reviewResultVisible" class="panel state-panel review">
@@ -326,14 +329,17 @@ const latestRunDuration = computed(() =>
 );
 const isWorkspaceLocked = computed(() => Boolean(workspaceStatus.value?.is_locked));
 const isOverdue = computed(() => Boolean(workspaceStatus.value?.is_overdue));
-const canEdit = computed(() => Boolean(workspaceStatus.value?.can_edit ?? true) && !isOverdue.value);
-const canSaveDraft = computed(() => Boolean(workspaceStatus.value?.can_save_draft ?? true) && !isOverdue.value);
-const canSubmit = computed(() => Boolean(workspaceStatus.value?.can_submit ?? true) && !isOverdue.value);
-const canRun = computed(() => Boolean(workspaceStatus.value?.can_run ?? true) && !isOverdue.value);
-const canRestoreHistory = computed(() => canEdit.value && !isWorkspaceLocked.value && !isOverdue.value);
+const isAdminViewer = computed(() => viewerRole.value === "admin");
+const isTeacherViewer = computed(() => viewerRole.value === "teacher");
+const isPrivilegedViewer = computed(() => isAdminViewer.value || isTeacherViewer.value);
+const isDeadlineLocked = computed(() => isOverdue.value && !isPrivilegedViewer.value);
+const canEdit = computed(() => Boolean(workspaceStatus.value?.can_edit ?? true) && !isDeadlineLocked.value);
+const canSaveDraft = computed(() => Boolean(workspaceStatus.value?.can_save_draft ?? true) && !isDeadlineLocked.value);
+const canSubmit = computed(() => Boolean(workspaceStatus.value?.can_submit ?? true) && !isDeadlineLocked.value);
+const canRun = computed(() => Boolean(workspaceStatus.value?.can_run ?? true) && !isDeadlineLocked.value);
+const canRestoreHistory = computed(() => canEdit.value && !isWorkspaceLocked.value && !isDeadlineLocked.value);
 const isAccessRestricted = computed(() => Boolean(accessRestriction.value.blocked));
 const hasEditorAccess = computed(() => !isAccessCheckLoading.value && !isAccessRestricted.value);
-const isAdminViewer = computed(() => viewerRole.value === "admin");
 const canUseSubmissionFlow = computed(() => hasEditorAccess.value && !isAdminViewer.value);
 const rerunDisabled = computed(() => !hasEditorAccess.value || !hasValidExperimentId.value || !canRun.value || isBusy.value);
 const saveInDrawerDisabled = computed(
@@ -367,11 +373,16 @@ const accessRestrictionTitle = computed(() => {
   return "当前实验暂不可访问";
 });
 const workspaceMessage = computed(() => {
+  if (isOverdue.value && isPrivilegedViewer.value && !isWorkspaceLocked.value && Boolean(workspaceStatus.value?.can_run ?? true)) {
+    return isAdminViewer.value
+      ? "本实验已截止，管理员测试模式仍可运行与查看，不支持保存草稿和正式提交"
+      : "本实验已截止，教师账号仍可继续运行用于教学测试";
+  }
   const backendMessage = workspaceStatus.value?.message;
   if (backendMessage) {
     return backendMessage;
   }
-  if (isOverdue.value) {
+  if (isDeadlineLocked.value) {
     return "本实验已截止，当前仅可查看内容";
   }
   return "当前可继续编辑和保存草稿";
@@ -383,11 +394,11 @@ const workspaceStateText = computed(() => {
   if (!workspaceStatus.value?.is_open) {
     return "未开放";
   }
-  if (workspaceStatus.value?.is_overdue) {
-    return "已截止";
-  }
   if (isWorkspaceLocked.value) {
     return "已锁定";
+  }
+  if (workspaceStatus.value?.is_overdue) {
+    return isPrivilegedViewer.value && canRun.value ? "已截止（可运行）" : "已截止";
   }
   return "可编辑";
 });
@@ -530,7 +541,7 @@ function updateWorkspaceStatus(payload) {
     ...workspaceStatus.value,
     ...payload,
   };
-  if (workspaceStatus.value.is_locked || workspaceStatus.value.is_overdue) {
+  if (workspaceStatus.value.is_locked || isDeadlineLocked.value) {
     clearAutoSaveTimer();
     hasUnsavedChanges.value = false;
     autoSaveStatus.value = workspaceStatus.value.is_locked ? "submitted" : "clean";
@@ -935,7 +946,7 @@ async function handleRun() {
     return;
   }
   if (!canRun.value) {
-    message.value = isOverdue.value ? "本实验已截止，当前不可运行代码" : workspaceMessage.value;
+    message.value = isDeadlineLocked.value ? "本实验已截止，当前不可运行代码" : workspaceMessage.value;
     return;
   }
   if (!currentCode.value.trim()) {
@@ -958,7 +969,7 @@ async function handleRun() {
 function handleRunAction() {
   if (!canRun.value && hasRunResult.value) {
     showRunResultDrawer.value = true;
-    message.value = isOverdue.value
+    message.value = isDeadlineLocked.value
       ? "本实验已截止，当前不可重新运行代码，已为你打开最近一次运行结果。"
       : "当前运行权限已关闭，已为你打开最近一次运行结果。";
     return;
@@ -984,7 +995,7 @@ async function handleSave() {
     return;
   }
   if (!canSaveDraft.value) {
-    message.value = isOverdue.value ? "本实验已截止，当前不可保存草稿" : workspaceMessage.value;
+    message.value = isDeadlineLocked.value ? "本实验已截止，当前不可保存草稿" : workspaceMessage.value;
     return;
   }
   clearAutoSaveTimer();
@@ -1029,7 +1040,7 @@ async function handleSubmit() {
     return;
   }
   if (!canSubmit.value) {
-    message.value = isOverdue.value ? "本实验已截止，当前不可正式提交" : workspaceMessage.value;
+    message.value = isDeadlineLocked.value ? "本实验已截止，当前不可正式提交" : workspaceMessage.value;
     return;
   }
   clearAutoSaveTimer();
@@ -1086,7 +1097,7 @@ async function toggleHistoryPanel() {
 
 async function loadHistoryDetail(item) {
   if (!canRestoreHistory.value) {
-    if (isOverdue.value) {
+    if (isDeadlineLocked.value) {
       message.value = "本实验已截止，当前不可恢复历史版本进行修改";
       return;
     }
@@ -1173,9 +1184,9 @@ watch(
 );
 
 watch(
-  () => isOverdue.value,
-  (overdue) => {
-    if (!overdue) {
+  () => isDeadlineLocked.value,
+  (deadlineLocked) => {
+    if (!deadlineLocked) {
       return;
     }
     clearAutoSaveTimer();

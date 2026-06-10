@@ -50,9 +50,26 @@
                 {{ group.applyLabel }}
               </button>
             </div>
+            <div v-if="group.availableLibraries.length > 0" class="stage-libraries">
+              <div class="stage-libraries-head">
+                <span>选择本阶段库</span>
+                <small>应用参数时写入代码导入区</small>
+              </div>
+              <div class="library-options">
+                <label v-for="item in group.availableLibraries" :key="`${group.id}-${item.value}`" class="library-option">
+                  <input
+                    v-model="selectedStageLibraries[group.id]"
+                    type="checkbox"
+                    :value="item.value"
+                    :disabled="isBusy || !canTemplateActions"
+                  />
+                  <span :title="item.importStatement">{{ item.label }}</span>
+                </label>
+              </div>
+            </div>
             <div class="params-grid">
               <label v-for="field in group.fields" :key="`${group.id}-${field.name}`" class="field">
-                <span :title="`${field.label}（${field.name}）`">{{ field.label }}（{{ field.name }}）</span>
+                <span :title="`${field.label}（${field.name}）`">{{ field.label }}</span>
                 <select
                   v-if="field.type === 'select'"
                   v-model="templateForm[field.name]"
@@ -116,7 +133,7 @@
         </div>
         <div v-else class="params-grid">
           <label v-for="field in templateFields" :key="field.name" class="field">
-            <span :title="`${field.label}（${field.name}）`">{{ field.label }}（{{ field.name }}）</span>
+            <span :title="`${field.label}（${field.name}）`">{{ field.label }}</span>
             <select
               v-if="field.type === 'select'"
               v-model="templateForm[field.name]"
@@ -177,7 +194,7 @@
           </label>
         </div>
 
-        <div class="imports-wrap">
+        <div v-if="hasGlobalImportOptions" class="imports-wrap">
           <article class="import-box">
             <h4>固定库（不可删除）</h4>
             <ul>
@@ -236,9 +253,12 @@
         <p v-else-if="templateMessage" class="tips success-text">{{ templateMessage }}</p>
       </article>
 
-      <article v-if="isOverdue" class="panel warn">
+      <article v-if="isDeadlineLocked" class="panel warn">
         <h3>本实验已截止，当前仅可查看内容</h3>
         <p>不可继续运行、保存或提交，历史记录仅支持查看。</p>
+      </article>
+      <article v-else-if="isOverdue && isPrivilegedViewer && canRun" class="panel info">
+        本实验已截止，当前账号仍可继续运行用于教学测试。
       </article>
       <article v-if="isWorkspaceLocked" class="panel info">{{ workspaceMessage }}</article>
       <article v-if="message && !showRunResultDrawer" class="panel info">{{ message }}</article>
@@ -406,6 +426,7 @@ const accessRestriction = ref({
 const templateForm = reactive({});
 const templateFields = ref([]);
 const templateGroups = ref([]);
+const selectedStageLibraries = reactive({});
 const originalTemplateCode = ref("");
 const fixedImports = ref([]);
 const optionalImports = ref([]);
@@ -460,6 +481,8 @@ const adminTestDraftStorageKey = computed(() =>
   hasValidExperimentId.value ? `${adminTestDraftStorageNamespace}:${experimentId.value}` : "",
 );
 const isAdminViewer = computed(() => viewerRole.value === "admin");
+const isTeacherViewer = computed(() => viewerRole.value === "teacher");
+const isPrivilegedViewer = computed(() => isAdminViewer.value || isTeacherViewer.value);
 const experimentTitle = computed(() => experiment.value?.title || "引导式模板实验");
 const experimentDescription = computed(
   () => experiment.value?.description || "先配置参数与导入库，再应用到代码模板并继续运行/保存/提交。",
@@ -468,15 +491,20 @@ const isBusy = computed(() => isRunning.value || isSaving.value || isSubmitting.
 
 const isWorkspaceLocked = computed(() => Boolean(workspaceStatus.value?.is_locked));
 const isOverdue = computed(() => Boolean(workspaceStatus.value?.is_overdue));
+const isDeadlineLocked = computed(() => isOverdue.value && !isPrivilegedViewer.value);
 const allowEditGeneratedCode = computed(() => Boolean(experiment.value?.allow_edit_generated_code ?? true));
-const canEdit = computed(() => Boolean(workspaceStatus.value?.can_edit ?? true) && !isOverdue.value && allowEditGeneratedCode.value);
-const canSaveDraft = computed(() => Boolean(workspaceStatus.value?.can_save_draft ?? true) && !isOverdue.value);
-const canSubmit = computed(() => Boolean(workspaceStatus.value?.can_submit ?? true) && !isOverdue.value);
-const canRun = computed(() => Boolean(workspaceStatus.value?.can_run ?? true) && !isOverdue.value);
-const canRestoreHistory = computed(() => canEdit.value && !isWorkspaceLocked.value && !isOverdue.value);
+const canEdit = computed(() => Boolean(workspaceStatus.value?.can_edit ?? true) && !isDeadlineLocked.value && allowEditGeneratedCode.value);
+const canSaveDraft = computed(() => Boolean(workspaceStatus.value?.can_save_draft ?? true) && !isDeadlineLocked.value);
+const canSubmit = computed(() => Boolean(workspaceStatus.value?.can_submit ?? true) && !isDeadlineLocked.value);
+const canRun = computed(() => Boolean(workspaceStatus.value?.can_run ?? true) && !isDeadlineLocked.value);
+const canRestoreHistory = computed(() => canEdit.value && !isWorkspaceLocked.value && !isDeadlineLocked.value);
 const isAccessRestricted = computed(() => Boolean(accessRestriction.value.blocked));
 const hasEditorAccess = computed(() => !isAccessCheckLoading.value && !isAccessRestricted.value);
 const canUseSubmissionFlow = computed(() => hasEditorAccess.value && !isAdminViewer.value);
+const hasStageLibraryOptions = computed(() => templateGroups.value.some((group) => group.availableLibraries.length > 0));
+const hasGlobalImportOptions = computed(
+  () => !hasStageLibraryOptions.value && (fixedImports.value.length > 0 || optionalImports.value.length > 0 || allowCustomImport.value),
+);
 const canTemplateActions = computed(() => hasEditorAccess.value && canEdit.value);
 const hasEditorContent = computed(() => Boolean((currentCode.value || "").trim()));
 
@@ -519,12 +547,19 @@ const accessRestrictionTitle = computed(() => {
   if (accessRestriction.value.reason === "template-config") return "该实验模板尚未配置完整";
   return "当前实验暂不可访问";
 });
-const workspaceMessage = computed(() => workspaceStatus.value?.message || "当前可继续编辑和保存草稿");
+const workspaceMessage = computed(() => {
+  if (isOverdue.value && isPrivilegedViewer.value && !isWorkspaceLocked.value && Boolean(workspaceStatus.value?.can_run ?? true)) {
+    return isAdminViewer.value
+      ? "本实验已截止，管理员测试模式仍可运行与查看，不支持保存草稿和正式提交"
+      : "本实验已截止，教师账号仍可继续运行用于教学测试";
+  }
+  return workspaceStatus.value?.message || "当前可继续编辑和保存草稿";
+});
 const workspaceStateText = computed(() => {
   if (!workspaceStatus.value?.is_published) return "未发布";
   if (!workspaceStatus.value?.is_open) return "未开放";
-  if (workspaceStatus.value?.is_overdue) return "已截止";
   if (isWorkspaceLocked.value) return "已锁定";
+  if (workspaceStatus.value?.is_overdue) return isPrivilegedViewer.value && canRun.value ? "已截止（可运行）" : "已截止";
   if (!allowEditGeneratedCode.value) return "只读";
   return "可编辑";
 });
@@ -670,12 +705,26 @@ function normalizeOptionalImportToStatement(moduleName) {
   if (!raw) return "";
   if (raw.startsWith("import ") || raw.startsWith("from ")) return raw;
   const moduleNameNormalized = raw;
-  if (moduleNameNormalized === "requests") return "import requests";
-  if (moduleNameNormalized === "bs4") return "from bs4 import BeautifulSoup";
-  if (moduleNameNormalized === "pandas") return "import pandas as pd";
-  if (moduleNameNormalized === "numpy") return "import numpy as np";
-  if (moduleNameNormalized === "matplotlib") return "import matplotlib.pyplot as plt";
-  if (moduleNameNormalized === "seaborn") return "import seaborn as sns";
+  const lowerName = moduleNameNormalized.toLowerCase();
+  if (lowerName === "requests" || lowerName.includes("requests")) return "import requests";
+  if (lowerName === "bs4" || lowerName.includes("beautifulsoup")) return "from bs4 import BeautifulSoup";
+  if (lowerName === "pandas" || lowerName.includes("pandas")) return "import pandas as pd";
+  if (lowerName === "numpy" || lowerName.includes("numpy")) return "import numpy as np";
+  if (lowerName === "matplotlib" || lowerName.includes("matplotlib")) return "import matplotlib.pyplot as plt";
+  if (lowerName === "seaborn" || lowerName.includes("seaborn")) return "import seaborn as sns";
+  if (lowerName === "sqlalchemy" || lowerName.includes("sqlalchemy")) return "from sqlalchemy import create_engine";
+  if (lowerName === "pymysql" || lowerName.includes("pymysql")) return "import pymysql";
+  if (lowerName.includes("model_selection") || lowerName.includes("train_test_split")) return "from sklearn.model_selection import train_test_split";
+  if (lowerName.includes("linear_model") || lowerName.includes("linearregression")) return "from sklearn.linear_model import LinearRegression";
+  if (lowerName.includes("preprocessing") || lowerName.includes("standardscaler")) return "from sklearn.preprocessing import StandardScaler";
+  if (lowerName.includes("neighbors") || lowerName.includes("kneighborsclassifier") || lowerName.includes("knn")) return "from sklearn.neighbors import KNeighborsClassifier";
+  if (lowerName.includes("cluster") || lowerName.includes("kmeans") || lowerName.includes("dbscan")) return "from sklearn.cluster import KMeans, DBSCAN";
+  if (lowerName.includes("metrics") || lowerName.includes("准确率") || lowerName.includes("mse") || lowerName.includes("r2")) {
+    return "from sklearn.metrics import mean_squared_error, r2_score, accuracy_score, classification_report, confusion_matrix";
+  }
+  if (lowerName.includes("mlxtend") || lowerName.includes("apriori") || lowerName.includes("association")) {
+    return "from mlxtend.frequent_patterns import apriori, association_rules";
+  }
   return `import ${moduleNameNormalized}`;
 }
 
@@ -730,6 +779,34 @@ function toPythonDictLiteral(payload) {
   });
   lines.push("}");
   return lines.join("\n");
+}
+
+const generatedImportsStart = "# === 平台生成导入开始 ===";
+const generatedImportsEnd = "# === 平台生成导入结束 ===";
+
+function buildManagedImportBlock(importStatements) {
+  const lines = [generatedImportsStart];
+  if (importStatements.length > 0) {
+    lines.push(...importStatements);
+  } else {
+    lines.push("# 请先在阶段卡片中勾选本阶段需要使用的库");
+  }
+  lines.push(generatedImportsEnd);
+  return lines.join("\n");
+}
+
+function hasManagedImportBlock(code) {
+  const text = String(code || "");
+  return text.includes(generatedImportsStart) && text.includes(generatedImportsEnd);
+}
+
+function replaceManagedImportBlock(code, importStatements) {
+  const block = buildManagedImportBlock(importStatements);
+  const pattern = new RegExp(`${escapeRegExp(generatedImportsStart)}[\\s\\S]*?${escapeRegExp(generatedImportsEnd)}`, "m");
+  if (pattern.test(code)) {
+    return code.replace(pattern, block);
+  }
+  return code;
 }
 
 function normalizeTemplateFieldOption(option) {
@@ -810,6 +887,30 @@ function extractTemplateFields(schemaValue) {
   return rawFields.map(normalizeTemplateField).filter(Boolean);
 }
 
+function normalizeTemplateGroupLibrary(item) {
+  if (typeof item === "string") {
+    const value = item.trim();
+    if (!value) return null;
+    const importStatement = normalizeOptionalImportToStatement(value);
+    return { label: value, value, importStatement, defaultSelected: false };
+  }
+  if (item && typeof item === "object") {
+    const label = String(item.label ?? item.name ?? item.value ?? item.import ?? item.import_statement ?? "").trim();
+    const importStatement = normalizeOptionalImportToStatement(item.import_statement ?? item.import ?? item.statement ?? item.value ?? label);
+    const value = String(item.value ?? importStatement ?? label).trim();
+    if (!label || !value || !importStatement) {
+      return null;
+    }
+    return {
+      label,
+      value,
+      importStatement,
+      defaultSelected: item.default_selected === true || item.defaultSelected === true,
+    };
+  }
+  return null;
+}
+
 function normalizeTemplateGroup(group, fieldMap, index) {
   if (!group || typeof group !== "object") {
     return null;
@@ -818,6 +919,12 @@ function normalizeTemplateGroup(group, fieldMap, index) {
   const title = String(group.title ?? `阶段 ${index + 1}`).trim() || `阶段 ${index + 1}`;
   const description = typeof group.description === "string" ? group.description.trim() : "";
   const applyLabel = String(group.apply_label ?? group.applyLabel ?? "应用本阶段参数到代码").trim() || "应用本阶段参数到代码";
+  const rawLibraries = Array.isArray(group.available_libraries)
+    ? group.available_libraries
+    : Array.isArray(group.availableLibraries)
+      ? group.availableLibraries
+      : [];
+  const availableLibraries = rawLibraries.map(normalizeTemplateGroupLibrary).filter(Boolean);
   const rawFieldRefs = Array.isArray(group.fields) ? group.fields : [];
   const fields = rawFieldRefs
     .map((item) => {
@@ -834,7 +941,7 @@ function normalizeTemplateGroup(group, fieldMap, index) {
   if (fields.length === 0) {
     return null;
   }
-  return { id, title, description, applyLabel, fields };
+  return { id, title, description, applyLabel, fields, availableLibraries };
 }
 
 function extractTemplateGroups(schemaValue, fields) {
@@ -845,6 +952,53 @@ function extractTemplateGroups(schemaValue, fields) {
   }
   const fieldMap = new Map(fields.map((field) => [field.name, field]));
   return rawGroups.map((group, index) => normalizeTemplateGroup(group, fieldMap, index)).filter(Boolean);
+}
+
+function resetStageLibrarySelections(groups = templateGroups.value) {
+  Object.keys(selectedStageLibraries).forEach((key) => {
+    delete selectedStageLibraries[key];
+  });
+  for (const group of groups) {
+    selectedStageLibraries[group.id] = group.availableLibraries
+      .filter((item) => item.defaultSelected)
+      .map((item) => item.value);
+  }
+}
+
+function buildStageLibrarySelectionSnapshot() {
+  const snapshot = {};
+  for (const group of templateGroups.value) {
+    const allowedValues = new Set(group.availableLibraries.map((item) => item.value));
+    const selected = Array.isArray(selectedStageLibraries[group.id]) ? selectedStageLibraries[group.id] : [];
+    snapshot[group.id] = selected.filter((item) => allowedValues.has(item));
+  }
+  return snapshot;
+}
+
+function applyStageLibrarySelectionSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== "object") {
+    return;
+  }
+  for (const group of templateGroups.value) {
+    const allowedValues = new Set(group.availableLibraries.map((item) => item.value));
+    const selected = Array.isArray(snapshot[group.id]) ? snapshot[group.id] : [];
+    selectedStageLibraries[group.id] = selected
+      .map((item) => String(item || "").trim())
+      .filter((item) => item && allowedValues.has(item));
+  }
+}
+
+function resolveSelectedStageImportStatements() {
+  const imports = [];
+  for (const group of templateGroups.value) {
+    const selectedValues = new Set(Array.isArray(selectedStageLibraries[group.id]) ? selectedStageLibraries[group.id] : []);
+    for (const library of group.availableLibraries) {
+      if (selectedValues.has(library.value)) {
+        imports.push(library.importStatement);
+      }
+    }
+  }
+  return imports;
 }
 
 function resolveInputType(field) {
@@ -975,8 +1129,9 @@ function validateTemplateConfiguration(experimentDetail) {
 
 function applyTemplateSchemaDefaults(schemaValue) {
   const fields = extractTemplateFields(schemaValue);
+  const groups = extractTemplateGroups(schemaValue, fields);
   templateFields.value = fields;
-  templateGroups.value = extractTemplateGroups(schemaValue, fields);
+  templateGroups.value = groups;
   Object.keys(templateForm).forEach((key) => {
     delete templateForm[key];
   });
@@ -986,6 +1141,7 @@ function applyTemplateSchemaDefaults(schemaValue) {
   for (const field of fields) {
     templateForm[field.name] = resolveTemplateFieldDefaultValue(field);
   }
+  resetStageLibrarySelections(groups);
 }
 
 function applyImportConfig(configValue) {
@@ -1010,10 +1166,15 @@ async function buildImportStatements() {
     seen.add(value);
     merged.push(value);
   };
-  fixedImports.value.forEach(pushUnique);
-  selectedOptionalImports.value.forEach((name) => pushUnique(normalizeOptionalImportToStatement(name)));
+  if (!hasStageLibraryOptions.value) {
+    fixedImports.value.forEach(pushUnique);
+  }
+  resolveSelectedStageImportStatements().forEach(pushUnique);
+  if (!hasStageLibraryOptions.value) {
+    selectedOptionalImports.value.forEach((name) => pushUnique(normalizeOptionalImportToStatement(name)));
+  }
 
-  if (allowCustomImport.value && customImportText.value.trim()) {
+  if (!hasStageLibraryOptions.value && allowCustomImport.value && customImportText.value.trim()) {
     const lines = customImportText.value
       .split("\n")
       .map((line) => line.trim())
@@ -1093,6 +1254,7 @@ function buildTemplateStateSnapshot() {
   }
   return {
     form,
+    stage_library_selections: buildStageLibrarySelectionSnapshot(),
     selected_optional_imports: [...selectedOptionalImports.value],
     custom_import_text: allowCustomImport.value ? String(customImportText.value || "") : "",
   };
@@ -1121,6 +1283,7 @@ function applyTemplateStateSnapshot(snapshot) {
   selectedOptionalImports.value = nextOptional
     .map((item) => String(item || "").trim())
     .filter((item) => item && optionalSet.has(item));
+  applyStageLibrarySelectionSnapshot(snapshot.stage_library_selections);
   if (allowCustomImport.value) {
     customImportText.value = String(snapshot.custom_import_text || "");
   }
@@ -1166,6 +1329,7 @@ function buildAdminTestDraftSnapshot() {
   }
   return {
     formValues,
+    stageLibrarySelections: buildStageLibrarySelectionSnapshot(),
     selectedImports: [...selectedOptionalImports.value],
     customImports: allowCustomImport.value ? String(customImportText.value || "") : "",
     editorCode: String(currentCode.value || ""),
@@ -1199,6 +1363,8 @@ function applyAdminTestDraftSnapshot(snapshot) {
     selectedOptionalImports.value = selectedImports
       .map((item) => String(item || "").trim())
       .filter((item) => item && optionalSet.has(item));
+
+    applyStageLibrarySelectionSnapshot(snapshot.stageLibrarySelections);
 
     if (allowCustomImport.value) {
       customImportText.value = String(snapshot.customImports || "");
@@ -1299,7 +1465,7 @@ function ensureTemplateActionsAllowed() {
   if (canTemplateActions.value) {
     return true;
   }
-  if (isOverdue.value) {
+  if (isDeadlineLocked.value) {
     templateError.value = "本实验已截止，当前不可再应用模板或修改代码。";
     return false;
   }
@@ -1327,6 +1493,9 @@ function hasAnyTemplateToken(sourceCode, fields = templateFields.value) {
   const text = String(sourceCode || "");
   if (!text) {
     return false;
+  }
+  if (hasManagedImportBlock(text)) {
+    return true;
   }
   const tokenKeys = ["imports", "headers_block", "user_agent", ...fields.map((field) => field.name)];
   return tokenKeys.some((key) => {
@@ -1372,7 +1541,6 @@ function validateTemplateFormValues(fields = templateFields.value) {
 }
 
 function applyTemplateValue(templateCode, importStatements, fields = templateFields.value, options = {}) {
-  const importBlock = importStatements.join("\n");
   let code = normalizeLegacyHeadersTemplate(templateCode);
   for (const field of fields) {
     code = replaceTemplateToken(code, field.name, serializeTemplateFieldValue(field, resolveTemplateFieldRawValue(field)));
@@ -1380,9 +1548,11 @@ function applyTemplateValue(templateCode, importStatements, fields = templateFie
   code = replaceTemplateToken(code, "headers_block", resolveHeadersBlock());
   code = replaceTemplateToken(code, "user_agent", escapePyString(resolveSelectedUserAgentValue()));
   if (/\{\{\s*imports\s*\}\}/.test(code)) {
-    code = replaceTemplateToken(code, "imports", importBlock);
+    code = replaceTemplateToken(code, "imports", buildManagedImportBlock(importStatements));
+  } else if (hasManagedImportBlock(code)) {
+    code = replaceManagedImportBlock(code, importStatements);
   } else if (options.prependImportsIfMissing !== false) {
-    code = `${importBlock}\n\n${code}`;
+    code = `${buildManagedImportBlock(importStatements)}\n\n${code}`;
   }
   return code;
 }
@@ -1556,6 +1726,9 @@ async function loadExperimentAndCode() {
   });
   templateFields.value = [];
   templateGroups.value = [];
+  Object.keys(selectedStageLibraries).forEach((key) => {
+    delete selectedStageLibraries[key];
+  });
   originalTemplateCode.value = "";
   fixedImports.value = [];
   optionalImports.value = [];
@@ -1706,7 +1879,7 @@ async function handleRun() {
     return;
   }
   if (!canRun.value) {
-    message.value = isOverdue.value ? "本实验已截止，当前不可运行代码" : workspaceMessage.value;
+    message.value = isDeadlineLocked.value ? "本实验已截止，当前不可运行代码" : workspaceMessage.value;
     return;
   }
   if (!currentCode.value.trim()) {
@@ -1729,7 +1902,7 @@ async function handleRun() {
 function handleRunAction() {
   if (!canRun.value && hasRunResult.value) {
     showRunResultDrawer.value = true;
-    message.value = isOverdue.value
+    message.value = isDeadlineLocked.value
       ? "本实验已截止，当前不可重新运行代码，已为你打开最近一次运行结果。"
       : "当前运行权限已关闭，已为你打开最近一次运行结果。";
     return;
@@ -1755,7 +1928,7 @@ async function handleSave() {
     return;
   }
   if (!canSaveDraft.value) {
-    message.value = isOverdue.value ? "本实验已截止，当前不可保存草稿" : workspaceMessage.value;
+    message.value = isDeadlineLocked.value ? "本实验已截止，当前不可保存草稿" : workspaceMessage.value;
     return;
   }
   isSaving.value = true;
@@ -1796,7 +1969,7 @@ async function handleSubmit() {
     return;
   }
   if (!canSubmit.value) {
-    message.value = isOverdue.value ? "本实验已截止，当前不可正式提交" : workspaceMessage.value;
+    message.value = isDeadlineLocked.value ? "本实验已截止，当前不可正式提交" : workspaceMessage.value;
     return;
   }
   isSubmitting.value = true;
@@ -1853,7 +2026,7 @@ function isHistoryItemActive(item) {
 
 async function loadHistoryDetail(item) {
   if (!canRestoreHistory.value) {
-    message.value = isOverdue.value ? "本实验已截止，当前不可恢复历史版本" : "当前不可恢复历史版本";
+    message.value = isDeadlineLocked.value ? "本实验已截止，当前不可恢复历史版本" : "当前不可恢复历史版本";
     return;
   }
   if (hasUnsavedChanges.value) {
@@ -1935,6 +2108,14 @@ watch(
 
 watch(
   () => selectedOptionalImports.value,
+  () => {
+    scheduleAdminTestDraftAutoSave();
+  },
+  { deep: true },
+);
+
+watch(
+  selectedStageLibraries,
   () => {
     scheduleAdminTestDraftAutoSave();
   },
@@ -2126,6 +2307,74 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
+.stage-libraries {
+  margin: 0 0 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface-1);
+  padding: 10px 12px 12px;
+}
+
+.stage-libraries-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.stage-libraries-head span {
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.stage-libraries-head small {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.library-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px 10px;
+}
+
+.library-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 32px;
+  border-radius: 7px;
+  padding: 5px 8px;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.library-option input {
+  width: 15px;
+  height: 15px;
+  accent-color: #2563eb;
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.library-option span {
+  color: inherit;
+  min-height: 0;
+  display: inline;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: unset;
+}
+
 .params-grid {
   margin-top: 10px;
   display: grid;
@@ -2145,12 +2394,10 @@ onBeforeUnmount(() => {
   color: var(--text-muted);
   line-height: 1.35;
   overflow-wrap: anywhere;
-  display: -webkit-box;
-  min-height: 38px;
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  white-space: nowrap;
 }
 
 .field input,

@@ -95,6 +95,10 @@ def get_workspace_status(db: Session, user_id: int, experiment_id: int, user_rol
         can_save_draft = False
         can_submit = False
         message = "管理员测试模式：可运行与查看，不支持保存草稿和正式提交"
+        if runtime_state["is_overdue"]:
+            message = "本实验已截止，管理员测试模式仍可运行与查看，不支持保存草稿和正式提交"
+    elif user_role == "teacher" and runtime_state["is_overdue"]:
+        message = "本实验已截止，教师账号仍可继续运行用于教学测试"
     if user_role == "student":
         if not runtime_state["is_published"]:
             can_edit = False
