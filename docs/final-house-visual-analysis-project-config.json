@@ -6,7 +6,7 @@
     "title": "综合项目：某市在售房源数据可视化分析",
     "slug": "final-house-visual-analysis-project",
     "description": "围绕某市在售房源数据，按数据获取、清洗、存储、读取、建模分析、分类聚类和可视化分析的顺序完成综合项目实训。",
-    "instruction_content": "## 一、项目目标\n\n本综合项目围绕某市在售房源数据，完成从网页数据获取到可视化分析的完整流程。\n\n你需要按课堂进度依次完成：\n\n- 第一阶段：数据获取、清洗、存储\n- 第二阶段：数据读取、线性回归、关联关系挖掘\n- 第三阶段：分类分析、聚类分析、可视化整体分析\n\n---\n\n## 二、项目要求\n\n1. 按阶段配置参数，不需要一次性填写全部参数。\n2. 每个阶段配置完成后，先查看阶段卡片中的可用库，再点击“应用本阶段参数到代码”。\n3. 第一阶段可选择缺失值填补方式，观察不同策略对清洗后数据的影响。\n4. 根据教师课堂安排逐步取消对应阶段代码注释并运行。\n5. 运行过程中保留以下截图，用于 Word 版实训报告：\n   - 参数设置卡片截图\n   - 代码运行结果截图\n   - 二维表格结果截图\n   - 可视化图像截图\n\n---\n\n## 三、注意事项\n\n- 本项目不要求从零编写完整代码，重点是理解流程、选择参数、运行结果并完成报告总结。\n- 代码输出只提供数据表、模型指标和图形结果，具体结论需要在实训报告中自行总结。\n- 若某阶段运行失败，请优先检查本阶段参数、数据库连接、表名和上一阶段是否已经成功完成。\n\n---\n\n## 四、配套数据\n\n- 教学原始数据表：`table_raw/final_house_portal_raw.csv`\n- 模拟网页入口：`docs/final_house_portal/index.html`\n- 部署方式：将 `docs/final_house_portal` 目录上传到云服务器静态站点，学生在第一阶段填写对应网页 URL。",
+    "instruction_content": "## 一、项目目标\n\n本综合项目围绕某市在售房源数据，完成从网页数据获取到可视化分析的完整流程。\n\n你需要按课堂进度依次完成：\n\n- 第一阶段：数据获取、清洗、存储\n- 第二阶段：数据读取、线性回归、关联关系挖掘\n- 第三阶段：分类分析、聚类分析、可视化整体分析\n\n---\n\n## 二、项目要求\n\n1. 按阶段配置参数，不需要一次性填写全部参数；未上到的阶段可以先保持空白。\n2. 每个阶段配置完成后，先按本阶段代码需要勾选库，再点击“应用本阶段参数到代码”。\n3. 第一阶段可选择缺失值填补方式，观察不同策略对清洗后数据的影响。\n4. 根据教师课堂安排逐步取消对应阶段代码注释并运行。\n5. 运行过程中保留以下截图，用于 Word 版实训报告：\n   - 参数设置卡片截图\n   - 代码运行结果截图\n   - 二维表格结果截图\n   - 可视化图像截图\n\n---\n\n## 三、注意事项\n\n- 本项目不要求从零编写完整代码，重点是理解流程、选择参数、运行结果并完成报告总结。\n- 代码输出只提供数据表、模型指标和图形结果，具体结论需要在实训报告中自行总结。\n- 若某阶段运行失败，请优先检查本阶段参数、库选择、数据库连接、表名和上一阶段是否已经成功完成。\n\n---\n\n## 四、配套数据\n\n- 教学原始数据表：`table_raw/final_house_portal_raw.csv`\n- 模拟网页入口：`docs/final_house_portal/index.html`\n- 部署方式：将 `docs/final_house_portal` 目录上传到云服务器静态站点，学生在第一阶段填写对应网页 URL。",
     "starter_code": null,
     "interaction_mode": "guided_template",
     "template_type": "final_house_visual_analysis_project",
@@ -160,7 +160,6 @@
           "name": "source_clean_table",
           "type": "text",
           "label": "第二阶段读取表名",
-          "default": "",
           "required": true,
           "placeholder": ""
         },
@@ -168,7 +167,6 @@
           "name": "regression_target",
           "type": "select",
           "label": "线性回归预测目标",
-          "default": "单价_num",
           "options": [
             {
               "label": "单价_num（推荐）",
@@ -189,7 +187,6 @@
           "name": "regression_features",
           "type": "text",
           "label": "线性回归特征字段",
-          "default": "面积_num,关注_num,房龄,总楼层,室数",
           "required": true,
           "placeholder": "用英文逗号分隔"
         },
@@ -200,7 +197,6 @@
           "step": 0.05,
           "type": "number",
           "label": "回归测试集比例",
-          "default": 0.2,
           "required": true
         },
         {
@@ -210,7 +206,6 @@
           "step": 0.01,
           "type": "number",
           "label": "关联规则最小支持度",
-          "default": 0.08,
           "required": true
         },
         {
@@ -220,7 +215,6 @@
           "step": 0.05,
           "type": "number",
           "label": "关联规则最小置信度",
-          "default": 0.45,
           "required": true
         },
         {
@@ -230,14 +224,12 @@
           "step": 1,
           "type": "number",
           "label": "展示关联规则数量",
-          "default": 10,
           "required": true
         },
         {
           "name": "analysis_table",
           "type": "text",
           "label": "第三阶段读取表名",
-          "default": "house_clean_final",
           "required": true,
           "placeholder": "与第一阶段写入表名保持一致"
         },
@@ -248,14 +240,12 @@
           "step": 1,
           "type": "number",
           "label": "高关注阈值",
-          "default": 19,
           "required": true
         },
         {
           "name": "classification_features",
           "type": "text",
           "label": "分类特征字段",
-          "default": "面积_num,单价_num,总价_num,房龄,室数,总楼层",
           "required": true,
           "placeholder": "用英文逗号分隔"
         },
@@ -266,7 +256,6 @@
           "step": 2,
           "type": "number",
           "label": "KNN 的 K 值",
-          "default": 5,
           "required": true
         },
         {
@@ -276,14 +265,12 @@
           "step": 2,
           "type": "number",
           "label": "K 值对比最大值",
-          "default": 15,
           "required": true
         },
         {
           "name": "cluster_features",
           "type": "text",
           "label": "聚类特征字段",
-          "default": "面积_num,单价_num,关注_num,房龄",
           "required": true,
           "placeholder": "用英文逗号分隔"
         },
@@ -294,7 +281,6 @@
           "step": 1,
           "type": "number",
           "label": "KMeans 聚类数量",
-          "default": 4,
           "required": true
         },
         {
@@ -304,7 +290,6 @@
           "step": 0.1,
           "type": "number",
           "label": "DBSCAN eps",
-          "default": 0.8,
           "required": true
         },
         {
@@ -314,7 +299,6 @@
           "step": 1,
           "type": "number",
           "label": "DBSCAN min_samples",
-          "default": 8,
           "required": true
         },
         {
@@ -324,7 +308,6 @@
           "step": 1,
           "type": "number",
           "label": "随机种子",
-          "default": 42,
           "required": true
         },
         {
@@ -334,7 +317,6 @@
           "step": 1,
           "type": "number",
           "label": "可视化排名数量",
-          "default": 10,
           "required": true
         }
       ],

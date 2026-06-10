@@ -230,7 +230,14 @@
           <button class="btn plain" :disabled="isBusy || !canTemplateActions" @click="loadTemplateSkeleton">加载骨架模板代码</button>
           <button class="btn plain" :disabled="isBusy || !canTemplateActions" @click="clearEditorCode">清空骨架模板代码</button>
           <button class="btn plain" :disabled="isBusy || !canTemplateActions" @click="restoreDefaultSkeleton">恢复默认骨架模板代码</button>
-          <button class="btn primary" :disabled="isBusy || !canTemplateActions" @click="applyTemplateToCode">应用参数到代码</button>
+          <button
+            v-if="templateGroups.length === 0"
+            class="btn primary"
+            :disabled="isBusy || !canTemplateActions"
+            @click="applyTemplateToCode"
+          >
+            应用参数到代码
+          </button>
           <button
             v-if="isAdminViewer"
             class="btn plain"
