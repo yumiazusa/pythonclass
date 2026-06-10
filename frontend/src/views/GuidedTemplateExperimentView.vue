@@ -1511,6 +1511,18 @@ function hasAnyTemplateToken(sourceCode, fields = templateFields.value) {
   });
 }
 
+function hasExecutableTemplateToken(sourceCode) {
+  return String(sourceCode || "")
+    .split("\n")
+    .some((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) {
+        return false;
+      }
+      return /\{\{\s*[a-zA-Z_]\w*\s*\}\}/.test(line);
+    });
+}
+
 function serializeTemplateFieldValue(field, rawValue) {
   const textValue = String(rawValue ?? "").trim();
   if (!textValue) {
@@ -1891,6 +1903,10 @@ async function handleRun() {
   }
   if (!currentCode.value.trim()) {
     message.value = "代码不能为空";
+    return;
+  }
+  if (hasExecutableTemplateToken(currentCode.value)) {
+    message.value = "代码中还有未应用的参数占位符，请先点击当前阶段卡片里的“应用本阶段参数到代码”。";
     return;
   }
   isRunning.value = true;
