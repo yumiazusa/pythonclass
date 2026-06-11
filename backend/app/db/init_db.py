@@ -495,6 +495,9 @@ def ensure_experiment_schedule_columns() -> None:
             cursor.execute("SHOW COLUMNS FROM `experiments` LIKE 'due_at'")
             if not cursor.fetchone():
                 cursor.execute("ALTER TABLE `experiments` ADD COLUMN `due_at` DATETIME NULL")
+            cursor.execute("SHOW COLUMNS FROM `experiments` LIKE 'class_deadlines'")
+            if not cursor.fetchone():
+                cursor.execute("ALTER TABLE `experiments` ADD COLUMN `class_deadlines` JSON NULL")
             cursor.execute("SHOW INDEX FROM `experiments` WHERE Key_name = 'ix_experiments_interaction_mode'")
             if not cursor.fetchone():
                 cursor.execute("ALTER TABLE `experiments` ADD INDEX `ix_experiments_interaction_mode` (`interaction_mode`)")

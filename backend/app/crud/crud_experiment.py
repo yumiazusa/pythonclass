@@ -38,10 +38,49 @@ def _normalize_datetime(value: datetime | None) -> datetime | None:
     return value.astimezone(timezone.utc).replace(tzinfo=None)
 
 
-def get_experiment_runtime_state(experiment: Experiment) -> dict:
+def _parse_schedule_datetime(value) -> datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return _normalize_datetime(value)
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return _normalize_datetime(datetime.fromisoformat(text.replace("Z", "+00:00")))
+        except ValueError:
+            return None
+    return None
+
+
+def resolve_effective_schedule(experiment: Experiment, class_name: str | None = None) -> dict:
+    global_open_at = _normalize_datetime(experiment.open_at)
+    global_due_at = _normalize_datetime(experiment.due_at)
+    clean_class_name = (class_name or "").strip()
+    class_deadline = None
+    if clean_class_name and isinstance(experiment.class_deadlines, dict):
+        class_deadline = experiment.class_deadlines.get(clean_class_name)
+    if not isinstance(class_deadline, dict):
+        return {
+            "open_at": global_open_at,
+            "due_at": global_due_at,
+            "schedule_source": "global",
+        }
+    class_open_at = _parse_schedule_datetime(class_deadline.get("open_at"))
+    class_due_at = _parse_schedule_datetime(class_deadline.get("due_at"))
+    return {
+        "open_at": class_open_at or global_open_at,
+        "due_at": class_due_at or global_due_at,
+        "schedule_source": "class",
+    }
+
+
+def get_experiment_runtime_state(experiment: Experiment, class_name: str | None = None) -> dict:
     now = datetime.utcnow()
-    open_at = _normalize_datetime(experiment.open_at)
-    due_at = _normalize_datetime(experiment.due_at)
+    schedule = resolve_effective_schedule(experiment, class_name=class_name)
+    open_at = schedule["open_at"]
+    due_at = schedule["due_at"]
     is_published = bool(experiment.is_published)
     is_open = bool(is_published and (open_at is None or now >= open_at))
     is_overdue = bool(due_at is not None and now > due_at)
@@ -56,6 +95,9 @@ def get_experiment_runtime_state(experiment: Experiment) -> dict:
         "is_published": is_published,
         "is_open": is_open,
         "is_overdue": is_overdue,
+        "open_at": open_at,
+        "due_at": due_at,
+        "schedule_source": schedule["schedule_source"],
         "status_text": status_text,
     }
 

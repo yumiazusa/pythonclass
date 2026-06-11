@@ -62,6 +62,9 @@ class WorkspaceStatusRead(BaseModel):
     is_published: bool
     is_open: bool
     is_overdue: bool
+    open_at: datetime | None = None
+    due_at: datetime | None = None
+    schedule_source: str = "global"
     can_edit: bool
     can_run: bool
     can_save_draft: bool

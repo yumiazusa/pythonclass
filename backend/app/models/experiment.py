@@ -45,6 +45,7 @@ class Experiment(Base):
     is_published: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     open_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    class_deadlines: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

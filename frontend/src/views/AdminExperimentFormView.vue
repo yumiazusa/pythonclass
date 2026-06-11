@@ -75,6 +75,40 @@
         </label>
       </div>
 
+      <section class="class-deadline-card">
+        <div class="class-deadline-head">
+          <div>
+            <h3>按班级截止</h3>
+            <p>未配置的班级沿用上方全局开放和截止时间。</p>
+          </div>
+          <button type="button" class="btn plain" :disabled="isLoading" @click="addClassDeadlineRow">添加班级</button>
+        </div>
+        <p v-if="classOptionsLoading" class="hint-text">正在加载班级...</p>
+        <div v-if="classDeadlineRows.length" class="class-deadline-list">
+          <div v-for="row in classDeadlineRows" :key="row.id" class="class-deadline-row">
+            <label class="field compact-field">
+              <span>班级</span>
+              <select v-model="row.class_name" :disabled="isLoading">
+                <option value="">选择班级</option>
+                <option v-for="name in deadlineClassOptions" :key="name" :value="name">{{ name }}</option>
+              </select>
+            </label>
+            <label class="field compact-field">
+              <span>开放时间</span>
+              <input v-model="row.open_at" type="datetime-local" :disabled="isLoading" />
+            </label>
+            <label class="field compact-field">
+              <span>截止时间</span>
+              <input v-model="row.due_at" type="datetime-local" :disabled="isLoading" />
+            </label>
+            <button type="button" class="btn plain remove-btn" :disabled="isLoading" @click="removeClassDeadlineRow(row.id)">
+              移除
+            </button>
+          </div>
+        </div>
+        <p v-else class="hint-text">暂无班级覆盖时间。</p>
+      </section>
+
       <label class="field">
         <span>实验简介（description）</span>
         <textarea v-model="form.description" rows="3" :disabled="isLoading" placeholder="用于列表展示的简介"></textarea>
@@ -168,6 +202,7 @@ import { useRoute, useRouter } from "vue-router";
 import {
   createAdminExperiment,
   getAdminExperimentById,
+  getAdminUserClassOptions,
   importAdminExperimentConfig,
   updateAdminExperiment,
 } from "../api/admin";
@@ -181,9 +216,23 @@ const errorMessage = ref("");
 const actionMessage = ref("");
 const actionError = ref(false);
 const importFileInput = ref(null);
+const classOptions = ref([]);
+const classOptionsLoading = ref(false);
+const classDeadlineRows = ref([]);
+let classDeadlineRowSeed = 0;
 
 const experimentId = computed(() => Number(route.params.id || 0));
 const isEditMode = computed(() => Number.isInteger(experimentId.value) && experimentId.value > 0);
+const deadlineClassOptions = computed(() => {
+  const names = new Set(classOptions.value);
+  classDeadlineRows.value.forEach((row) => {
+    const className = (row.class_name || "").trim();
+    if (className) {
+      names.add(className);
+    }
+  });
+  return Array.from(names);
+});
 const testPath = computed(() => {
   if (!isEditMode.value) {
     return "/admin/experiments";
@@ -212,6 +261,62 @@ const form = reactive({
   open_at: "",
   due_at: "",
 });
+
+function createClassDeadlineRow(className = "", openAt = "", dueAt = "") {
+  classDeadlineRowSeed += 1;
+  return {
+    id: classDeadlineRowSeed,
+    class_name: className,
+    open_at: openAt,
+    due_at: dueAt,
+  };
+}
+
+function addClassDeadlineRow() {
+  classDeadlineRows.value.push(createClassDeadlineRow());
+}
+
+function removeClassDeadlineRow(rowId) {
+  classDeadlineRows.value = classDeadlineRows.value.filter((row) => row.id !== rowId);
+}
+
+function buildClassDeadlinesPayload() {
+  const payload = {};
+  const usedClassNames = new Set();
+  classDeadlineRows.value.forEach((row) => {
+    const className = (row.class_name || "").trim();
+    if (!className) {
+      return;
+    }
+    if (usedClassNames.has(className)) {
+      throw new Error(`班级「${className}」重复配置`);
+    }
+    usedClassNames.add(className);
+    const openAt = toUtcIsoStringFromLocalInput(row.open_at);
+    const dueAt = toUtcIsoStringFromLocalInput(row.due_at);
+    if (!openAt && !dueAt) {
+      return;
+    }
+    if (openAt && dueAt && new Date(dueAt).getTime() <= new Date(openAt).getTime()) {
+      throw new Error(`班级「${className}」的截止时间必须晚于开放时间`);
+    }
+    payload[className] = {
+      open_at: openAt,
+      due_at: dueAt,
+    };
+  });
+  return Object.keys(payload).length ? payload : null;
+}
+
+function applyClassDeadlines(deadlines) {
+  if (!deadlines || typeof deadlines !== "object") {
+    classDeadlineRows.value = [];
+    return;
+  }
+  classDeadlineRows.value = Object.entries(deadlines).map(([className, schedule]) =>
+    createClassDeadlineRow(className, toDateTimeLocalInput(schedule?.open_at), toDateTimeLocalInput(schedule?.due_at)),
+  );
+}
 
 function parseJsonText(value, fieldLabel) {
   const text = (value || "").trim();
@@ -254,6 +359,7 @@ function buildPayload() {
     is_published: Boolean(form.is_published),
     open_at: toUtcIsoStringFromLocalInput(form.open_at),
     due_at: toUtcIsoStringFromLocalInput(form.due_at),
+    class_deadlines: buildClassDeadlinesPayload(),
   };
   if (form.interaction_mode === "guided_template") {
     payload.template_type = form.template_type.trim() || null;
@@ -308,6 +414,7 @@ function normalizeImportedConfig(rawPayload) {
     "is_published",
     "open_at",
     "due_at",
+    "class_deadlines",
   ];
   const normalized = {};
   allowedKeys.forEach((key) => {
@@ -346,6 +453,18 @@ function applyDetail(detail) {
   form.is_published = Boolean(detail.is_published);
   form.open_at = toDateTimeLocalInput(detail.open_at);
   form.due_at = toDateTimeLocalInput(detail.due_at);
+  applyClassDeadlines(detail.class_deadlines);
+}
+
+async function loadClassOptions() {
+  classOptionsLoading.value = true;
+  try {
+    classOptions.value = await getAdminUserClassOptions();
+  } catch (error) {
+    classOptions.value = [];
+  } finally {
+    classOptionsLoading.value = false;
+  }
 }
 
 async function loadDetail() {
@@ -476,6 +595,7 @@ async function handleSubmit() {
 }
 
 onMounted(() => {
+  loadClassOptions();
   loadDetail();
 });
 </script>
@@ -569,6 +689,58 @@ onMounted(() => {
   max-width: 100%;
 }
 
+.class-deadline-card {
+  margin-top: 14px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 72%, var(--brand-border) 28%);
+  border-radius: 10px;
+  padding: 14px;
+  background: color-mix(in srgb, var(--surface-2) 88%, var(--brand-soft) 12%);
+}
+
+.class-deadline-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.class-deadline-head h3 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.class-deadline-head p,
+.hint-text {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.class-deadline-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.class-deadline-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(180px, 1fr) minmax(180px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.compact-field {
+  margin-top: 0;
+}
+
+.remove-btn {
+  min-height: 37px;
+}
+
 .mode-placeholder {
   margin-top: 10px;
   border: 1px dashed var(--border-strong);
@@ -660,6 +832,10 @@ onMounted(() => {
   .sort-field input {
     width: 100%;
     max-width: 100%;
+  }
+
+  .class-deadline-row {
+    grid-template-columns: 1fr;
   }
 }
 </style>

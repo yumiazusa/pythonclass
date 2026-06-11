@@ -27,8 +27,8 @@
             </div>
           </div>
           <p class="desc">{{ item.description || "暂无实验描述" }}</p>
-          <p class="meta">开放时间：{{ formatTime(item.open_at) }}</p>
-          <p class="meta">截止时间：{{ formatTime(item.due_at) }}</p>
+          <p class="meta">开放时间：{{ formatTime(getEffectiveOpenAt(item)) }}</p>
+          <p class="meta">截止时间：{{ formatTime(getEffectiveDueAt(item)) }}</p>
           <p class="meta">更新时间：{{ formatTime(item.updated_at) }}</p>
           <div class="actions">
             <RouterLink v-if="canEnterExperiment(item)" class="btn enter" :to="getEnterPath(item)">
@@ -61,10 +61,18 @@ function formatTime(value) {
   return formatApiDateTime(value);
 }
 
+function getEffectiveOpenAt(item) {
+  return item?.effective_open_at || item?.open_at;
+}
+
+function getEffectiveDueAt(item) {
+  return item?.effective_due_at || item?.due_at;
+}
+
 function getExperimentScheduleState(item) {
   const now = Date.now();
-  const openAtDate = parseApiDateTime(item?.open_at);
-  const dueAtDate = parseApiDateTime(item?.due_at);
+  const openAtDate = parseApiDateTime(getEffectiveOpenAt(item));
+  const dueAtDate = parseApiDateTime(getEffectiveDueAt(item));
   const openAt = openAtDate ? openAtDate.getTime() : null;
   const dueAt = dueAtDate ? dueAtDate.getTime() : null;
   if (!item?.is_published) {

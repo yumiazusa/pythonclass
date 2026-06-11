@@ -7,6 +7,11 @@ from pydantic import BaseModel, ConfigDict, Field
 InteractionModeType = Literal["native_editor", "guided_template"]
 
 
+class ClassDeadlineOverride(BaseModel):
+    open_at: datetime | None = None
+    due_at: datetime | None = None
+
+
 class ExperimentCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     slug: str = Field(min_length=1, max_length=120)
@@ -24,12 +29,14 @@ class ExperimentCreate(BaseModel):
     is_published: bool = False
     open_at: datetime | None = None
     due_at: datetime | None = None
+    class_deadlines: dict[str, ClassDeadlineOverride] | None = None
 
 
 class ExperimentSettingsUpdate(BaseModel):
     is_published: bool
     open_at: datetime | None = None
     due_at: datetime | None = None
+    class_deadlines: dict[str, ClassDeadlineOverride] | None = None
 
 
 class ExperimentRead(BaseModel):
@@ -50,6 +57,10 @@ class ExperimentRead(BaseModel):
     is_published: bool
     open_at: datetime | None
     due_at: datetime | None
+    class_deadlines: dict[str, ClassDeadlineOverride] | None = None
+    effective_open_at: datetime | None = None
+    effective_due_at: datetime | None = None
+    schedule_source: str = "global"
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)

@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from app.schemas.experiment import InteractionModeType
+from app.schemas.experiment import ClassDeadlineOverride, InteractionModeType
 from app.schemas.user import RoleType
 
 
@@ -185,6 +185,7 @@ class AdminExperimentItem(BaseModel):
     is_published: bool
     open_at: datetime | None
     due_at: datetime | None
+    class_deadlines: dict[str, ClassDeadlineOverride] | None = None
     updated_at: datetime
     created_at: datetime
 
@@ -214,6 +215,7 @@ class AdminExperimentCreateRequest(BaseModel):
     is_published: bool = False
     open_at: datetime | None = None
     due_at: datetime | None = None
+    class_deadlines: dict[str, ClassDeadlineOverride] | None = None
 
 
 class AdminExperimentConfigImportRequest(AdminExperimentCreateRequest):
@@ -243,6 +245,7 @@ class AdminExperimentUpdateRequest(BaseModel):
     is_published: bool | None = None
     open_at: datetime | None = None
     due_at: datetime | None = None
+    class_deadlines: dict[str, ClassDeadlineOverride] | None = None
 
 
 class AdminExperimentStatusUpdateResponse(BaseModel):

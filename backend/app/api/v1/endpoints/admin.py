@@ -62,6 +62,28 @@ def _normalize_to_utc_naive(value: datetime | None) -> datetime | None:
     return value.astimezone(timezone.utc).replace(tzinfo=None)
 
 
+def _serialize_class_deadlines(raw_deadlines) -> dict | None:
+    if not raw_deadlines:
+        return None
+    serialized: dict[str, dict[str, str | None]] = {}
+    for raw_class_name, raw_schedule in raw_deadlines.items():
+        class_name = str(raw_class_name or "").strip()
+        if not class_name:
+            continue
+        schedule = raw_schedule.model_dump() if hasattr(raw_schedule, "model_dump") else dict(raw_schedule or {})
+        open_at = _normalize_to_utc_naive(schedule.get("open_at"))
+        due_at = _normalize_to_utc_naive(schedule.get("due_at"))
+        if open_at and due_at and due_at <= open_at:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"{class_name} 的截止时间必须晚于开放时间")
+        if not open_at and not due_at:
+            continue
+        serialized[class_name] = {
+            "open_at": open_at.isoformat() if open_at else None,
+            "due_at": due_at.isoformat() if due_at else None,
+        }
+    return serialized or None
+
+
 def _to_admin_experiment_item(item) -> AdminExperimentItem:
     return AdminExperimentItem(
         experiment_id=item.id,
@@ -81,6 +103,7 @@ def _to_admin_experiment_item(item) -> AdminExperimentItem:
         is_published=bool(item.is_published),
         open_at=item.open_at,
         due_at=item.due_at,
+        class_deadlines=item.class_deadlines,
         updated_at=item.updated_at,
         created_at=item.created_at,
     )
@@ -279,6 +302,9 @@ def create_admin_experiment(
     create_payload = payload.model_dump()
     create_payload["slug"] = clean_slug
     create_payload["title"] = clean_title
+    create_payload["open_at"] = normalized_open_at
+    create_payload["due_at"] = normalized_due_at
+    create_payload["class_deadlines"] = _serialize_class_deadlines(payload.class_deadlines)
     if isinstance(payload.description, str):
         create_payload["description"] = payload.description.strip() or None
     if isinstance(payload.instruction_content, str):
@@ -317,6 +343,7 @@ def import_admin_experiment_config(
     import_payload["title"] = clean_title
     import_payload["open_at"] = normalized_open_at
     import_payload["due_at"] = normalized_due_at
+    import_payload["class_deadlines"] = _serialize_class_deadlines(payload.class_deadlines)
     if isinstance(payload.description, str):
         import_payload["description"] = payload.description.strip() or None
     if isinstance(payload.instruction_content, str):
@@ -395,6 +422,12 @@ def update_admin_experiment(
     due_at = _normalize_to_utc_naive(update_payload.get("due_at", experiment.due_at))
     if open_at and due_at and due_at <= open_at:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="截止时间必须晚于开放时间")
+    if "open_at" in update_payload:
+        update_payload["open_at"] = open_at
+    if "due_at" in update_payload:
+        update_payload["due_at"] = due_at
+    if "class_deadlines" in update_payload:
+        update_payload["class_deadlines"] = _serialize_class_deadlines(payload.class_deadlines)
     updated = crud_experiment.update_admin_experiment(db, experiment=experiment, payload=update_payload)
     return _to_admin_experiment_item(updated)
 
@@ -456,6 +489,7 @@ def copy_admin_experiment(
         "is_published": False,
         "open_at": source.open_at,
         "due_at": source.due_at,
+        "class_deadlines": deepcopy(source.class_deadlines) if source.class_deadlines is not None else None,
     }
     created = crud_experiment.create_admin_experiment(db, copied_payload)
     return _to_admin_experiment_item(created)

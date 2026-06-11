@@ -55,6 +55,28 @@ def _normalize_to_utc_naive(value: datetime | None) -> datetime | None:
     return value.astimezone(timezone.utc).replace(tzinfo=None)
 
 
+def _serialize_class_deadlines(raw_deadlines) -> dict | None:
+    if not raw_deadlines:
+        return None
+    serialized: dict[str, dict[str, str | None]] = {}
+    for raw_class_name, raw_schedule in raw_deadlines.items():
+        class_name = str(raw_class_name or "").strip()
+        if not class_name:
+            continue
+        schedule = raw_schedule.model_dump() if hasattr(raw_schedule, "model_dump") else dict(raw_schedule or {})
+        open_at = _normalize_to_utc_naive(schedule.get("open_at"))
+        due_at = _normalize_to_utc_naive(schedule.get("due_at"))
+        if open_at and due_at and due_at <= open_at:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"{class_name} 的截止时间必须晚于开放时间")
+        if not open_at and not due_at:
+            continue
+        serialized[class_name] = {
+            "open_at": open_at.isoformat() if open_at else None,
+            "due_at": due_at.isoformat() if due_at else None,
+        }
+    return serialized or None
+
+
 def _ensure_experiment_exists(db: DBSession, experiment_id: int) -> None:
     experiment = crud_experiment.get(db, experiment_id=experiment_id)
     if not experiment:
@@ -144,7 +166,11 @@ def update_teacher_experiment_settings(
     normalized_due_at = _normalize_to_utc_naive(settings_in.due_at)
     if normalized_open_at and normalized_due_at and normalized_due_at <= normalized_open_at:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="截止时间必须晚于开放时间")
-    updated = crud_experiment.update_settings(db, experiment=experiment, settings_in=settings_in)
+    settings_payload = settings_in.model_dump()
+    settings_payload["open_at"] = normalized_open_at
+    settings_payload["due_at"] = normalized_due_at
+    settings_payload["class_deadlines"] = _serialize_class_deadlines(settings_in.class_deadlines)
+    updated = crud_experiment.update_admin_experiment(db, experiment=experiment, payload=settings_payload)
     return ExperimentRead.model_validate(updated)
 
 

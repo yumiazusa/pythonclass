@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.crud import crud_experiment
 from app.models.code_submission import CodeSubmission
 from app.models.experiment import Experiment
+from app.models.user import User
 from app.schemas.submission import CodeSubmissionCreate
 
 
@@ -78,10 +79,12 @@ def is_experiment_locked(db: Session, user_id: int, experiment_id: int) -> bool:
 def get_workspace_status(db: Session, user_id: int, experiment_id: int, user_role: str) -> dict:
     latest = get_latest(db, user_id=user_id, experiment_id=experiment_id)
     experiment = db.get(Experiment, experiment_id)
+    user = db.get(User, user_id)
+    class_name = user.class_name if user and user_role == "student" else None
     runtime_state = (
-        crud_experiment.get_experiment_runtime_state(experiment)
+        crud_experiment.get_experiment_runtime_state(experiment, class_name=class_name)
         if experiment
-        else {"is_published": False, "is_open": False, "is_overdue": False}
+        else {"is_published": False, "is_open": False, "is_overdue": False, "open_at": None, "due_at": None, "schedule_source": "global"}
     )
     is_locked = bool(latest and latest.status == "submitted")
     if user_role == "admin":
@@ -133,6 +136,9 @@ def get_workspace_status(db: Session, user_id: int, experiment_id: int, user_rol
         "is_published": runtime_state["is_published"],
         "is_open": runtime_state["is_open"],
         "is_overdue": runtime_state["is_overdue"],
+        "open_at": runtime_state["open_at"],
+        "due_at": runtime_state["due_at"],
+        "schedule_source": runtime_state["schedule_source"],
         "can_edit": can_edit,
         "can_run": can_run,
         "can_save_draft": can_save_draft,

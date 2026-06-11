@@ -32,6 +32,39 @@
             <input v-model="settingsForm.due_at_local" type="datetime-local" :disabled="settingsSaving" />
           </label>
         </div>
+        <section class="class-deadline-card">
+          <div class="class-deadline-head">
+            <div>
+              <h4>按班级截止</h4>
+              <p>未配置的班级沿用全局时间；只填截止时间即可单独延长或提前某个班级。</p>
+            </div>
+            <button type="button" class="btn gray" :disabled="settingsSaving" @click="addClassDeadlineRow">添加班级</button>
+          </div>
+          <p v-if="classOptionsLoading" class="hint">正在加载班级...</p>
+          <div v-if="classDeadlineRows.length" class="class-deadline-list">
+            <div v-for="row in classDeadlineRows" :key="row.id" class="class-deadline-row">
+              <label class="filter-item">
+                <span>班级</span>
+                <select v-model="row.class_name" :disabled="settingsSaving">
+                  <option value="">选择班级</option>
+                  <option v-for="name in deadlineClassOptions" :key="name" :value="name">{{ name }}</option>
+                </select>
+              </label>
+              <label class="filter-item">
+                <span>开放时间</span>
+                <input v-model="row.open_at_local" type="datetime-local" :disabled="settingsSaving" />
+              </label>
+              <label class="filter-item">
+                <span>截止时间</span>
+                <input v-model="row.due_at_local" type="datetime-local" :disabled="settingsSaving" />
+              </label>
+              <button type="button" class="btn gray remove-deadline-btn" :disabled="settingsSaving" @click="removeClassDeadlineRow(row.id)">
+                移除
+              </button>
+            </div>
+          </div>
+          <p v-else class="hint">暂无班级覆盖时间。</p>
+        </section>
         <div class="settings-meta">
           <span>当前状态：{{ experimentPublishLabel }}</span>
           <span>开放：{{ formatTime(experimentSettings.open_at) }}</span>
@@ -515,6 +548,7 @@ import {
   exportTeacherExperimentResults,
   getTeacherExperimentClassSummary,
   getTeacherExperimentStudents,
+  getTeacherStudentClassOptions,
   getTeacherStudentHistory,
   getTeacherSubmissionDetail,
   reviewTeacherSubmission,
@@ -590,6 +624,10 @@ const settingsForm = reactive({
   due_at_local: "",
 });
 const settingsSaving = ref(false);
+const allClassOptions = ref([]);
+const classOptionsLoading = ref(false);
+const classDeadlineRows = ref([]);
+let classDeadlineRowSeed = 0;
 const batchReviewing = ref(false);
 const batchReviewForm = reactive({
   review_status: "passed",
@@ -642,6 +680,16 @@ const canBatchReview = computed(
   () => selectedSubmissionIds.value.length > 0 && !batchReviewing.value && !studentsLoading.value,
 );
 const experimentPublishLabel = computed(() => (experimentSettings.value?.is_published ? "已发布" : "未发布"));
+const deadlineClassOptions = computed(() => {
+  const names = new Set(allClassOptions.value);
+  classDeadlineRows.value.forEach((row) => {
+    const className = (row.class_name || "").trim();
+    if (className) {
+      names.add(className);
+    }
+  });
+  return Array.from(names);
+});
 const historyDrawerStyle = computed(() => ({
   transform: `translate3d(0, ${historyDrawerOffsetY.value}px, 0)`,
 }));
@@ -656,6 +704,62 @@ function toDateTimeLocalValue(value) {
 
 function toIsoDateTime(value) {
   return toUtcIsoStringFromLocalInput(value);
+}
+
+function createClassDeadlineRow(className = "", openAt = "", dueAt = "") {
+  classDeadlineRowSeed += 1;
+  return {
+    id: classDeadlineRowSeed,
+    class_name: className,
+    open_at_local: openAt,
+    due_at_local: dueAt,
+  };
+}
+
+function addClassDeadlineRow() {
+  classDeadlineRows.value.push(createClassDeadlineRow());
+}
+
+function removeClassDeadlineRow(rowId) {
+  classDeadlineRows.value = classDeadlineRows.value.filter((row) => row.id !== rowId);
+}
+
+function applyClassDeadlines(deadlines) {
+  if (!deadlines || typeof deadlines !== "object") {
+    classDeadlineRows.value = [];
+    return;
+  }
+  classDeadlineRows.value = Object.entries(deadlines).map(([className, schedule]) =>
+    createClassDeadlineRow(className, toDateTimeLocalValue(schedule?.open_at), toDateTimeLocalValue(schedule?.due_at)),
+  );
+}
+
+function buildClassDeadlinesPayload() {
+  const payload = {};
+  const usedClassNames = new Set();
+  classDeadlineRows.value.forEach((row) => {
+    const className = (row.class_name || "").trim();
+    if (!className) {
+      return;
+    }
+    if (usedClassNames.has(className)) {
+      throw new Error(`班级「${className}」重复配置`);
+    }
+    usedClassNames.add(className);
+    const openAt = toIsoDateTime(row.open_at_local);
+    const dueAt = toIsoDateTime(row.due_at_local);
+    if (!openAt && !dueAt) {
+      return;
+    }
+    if (openAt && dueAt && new Date(dueAt).getTime() <= new Date(openAt).getTime()) {
+      throw new Error(`班级「${className}」的截止时间必须晚于开放时间`);
+    }
+    payload[className] = {
+      open_at: openAt,
+      due_at: dueAt,
+    };
+  });
+  return Object.keys(payload).length ? payload : null;
 }
 
 function formatReviewStatus(value) {
@@ -905,12 +1009,25 @@ async function loadExperimentMeta() {
       is_published: Boolean(experiment?.is_published),
       open_at: experiment?.open_at || null,
       due_at: experiment?.due_at || null,
+      class_deadlines: experiment?.class_deadlines || null,
     };
     settingsForm.is_published = Boolean(experiment?.is_published);
     settingsForm.open_at_local = toDateTimeLocalValue(experiment?.open_at);
     settingsForm.due_at_local = toDateTimeLocalValue(experiment?.due_at);
+    applyClassDeadlines(experiment?.class_deadlines);
   } catch (error) {
     experimentTitle.value = "加载失败";
+  }
+}
+
+async function loadClassOptions() {
+  classOptionsLoading.value = true;
+  try {
+    allClassOptions.value = await getTeacherStudentClassOptions();
+  } catch (error) {
+    allClassOptions.value = [];
+  } finally {
+    classOptionsLoading.value = false;
   }
 }
 
@@ -925,6 +1042,14 @@ async function handleSaveExperimentSettings() {
     actionMessage.value = "截止时间不能早于开放时间";
     return;
   }
+  let classDeadlines = null;
+  try {
+    classDeadlines = buildClassDeadlinesPayload();
+  } catch (error) {
+    actionError.value = true;
+    actionMessage.value = error.message || "班级截止配置格式错误";
+    return;
+  }
   actionMessage.value = "";
   actionError.value = false;
   settingsSaving.value = true;
@@ -933,15 +1058,18 @@ async function handleSaveExperimentSettings() {
       is_published: settingsForm.is_published,
       open_at: openAt,
       due_at: dueAt,
+      class_deadlines: classDeadlines,
     });
     experimentSettings.value = {
       is_published: Boolean(updated?.is_published),
       open_at: updated?.open_at || null,
       due_at: updated?.due_at || null,
+      class_deadlines: updated?.class_deadlines || null,
     };
     settingsForm.is_published = Boolean(updated?.is_published);
     settingsForm.open_at_local = toDateTimeLocalValue(updated?.open_at);
     settingsForm.due_at_local = toDateTimeLocalValue(updated?.due_at);
+    applyClassDeadlines(updated?.class_deadlines);
     actionMessage.value = "实验设置已更新";
     await Promise.all([loadStudents(), loadClassSummary()]);
   } catch (error) {
@@ -1372,7 +1500,7 @@ async function initializePage() {
     return;
   }
   pagination.page = 1;
-  await Promise.all([loadExperimentMeta(), loadStudents(), loadClassSummary()]);
+  await Promise.all([loadExperimentMeta(), loadClassOptions(), loadStudents(), loadClassSummary()]);
 }
 
 watch(
@@ -1512,14 +1640,69 @@ onBeforeUnmount(() => {
   background: color-mix(in srgb, var(--surface-2) 84%, var(--brand-soft) 16%);
 }
 
+.class-deadline-card {
+  margin-top: 14px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 72%, var(--brand-border) 28%);
+  border-radius: 10px;
+  padding: 14px;
+  background: color-mix(in srgb, var(--surface-2) 88%, var(--brand-soft) 12%);
+}
+
+.class-deadline-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.class-deadline-head h4 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.class-deadline-head p {
+  margin: 6px 0 0;
+  color: var(--text-subtle);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.class-deadline-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.class-deadline-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(180px, 1fr) minmax(180px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.remove-deadline-btn {
+  min-height: 42px;
+}
+
 @media (max-width: 1100px) {
   .settings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .class-deadline-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 760px) {
   .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .class-deadline-row {
     grid-template-columns: 1fr;
   }
 }
