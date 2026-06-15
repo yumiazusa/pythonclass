@@ -1,7 +1,7 @@
 {
   "file_type": "pythonclass_experiment_config",
   "version": 1,
-  "exported_at": "2026-06-10T16:05:47.756Z",
+  "exported_at": "2026-06-15T08:57:50.734Z",
   "experiment_config": {
     "title": "综合项目：某市在售房源数据可视化分析",
     "slug": "final-house-visual-analysis-project",
@@ -169,7 +169,27 @@
           "label": "线性回归预测目标",
           "options": [
             {
-              "label": "单价_num（推荐）",
+              "label": "单价_num",
+              "value": "单价_num"
+            },
+            {
+              "label": "关注_num",
+              "value": "关注_num"
+            },
+            {
+              "label": "总价_num（推荐）",
+              "value": "总价_num"
+            }
+          ],
+          "required": true
+        },
+        {
+          "name": "regression_feature",
+          "type": "select",
+          "label": "线性回归特征字段",
+          "options": [
+            {
+              "label": "单价_num",
               "value": "单价_num"
             },
             {
@@ -177,18 +197,31 @@
               "value": "总价_num"
             },
             {
+              "label": "面积_num（推荐）",
+              "value": "面积_num"
+            },
+            {
               "label": "关注_num",
               "value": "关注_num"
+            },
+            {
+              "label": "房龄",
+              "value": "房龄"
+            },
+            {
+              "label": "室数",
+              "value": "室数"
+            },
+            {
+              "label": "厅数",
+              "value": "厅数"
+            },
+            {
+              "label": "总楼层",
+              "value": "总楼层"
             }
           ],
           "required": true
-        },
-        {
-          "name": "regression_features",
-          "type": "text",
-          "label": "线性回归特征字段",
-          "required": true,
-          "placeholder": "用英文逗号分隔"
         },
         {
           "max": 0.5,
@@ -243,11 +276,76 @@
           "required": true
         },
         {
-          "name": "classification_features",
-          "type": "text",
-          "label": "分类特征字段",
-          "required": true,
-          "placeholder": "用英文逗号分隔"
+          "name": "classification_feature_x",
+          "type": "select",
+          "label": "分类横轴特征字段",
+          "options": [
+            {
+              "label": "单价_num（推荐）",
+              "value": "单价_num"
+            },
+            {
+              "label": "面积_num（推荐）",
+              "value": "面积_num"
+            },
+            {
+              "label": "总价_num",
+              "value": "总价_num"
+            },
+            {
+              "label": "房龄",
+              "value": "房龄"
+            },
+            {
+              "label": "室数",
+              "value": "室数"
+            },
+            {
+              "label": "厅数",
+              "value": "厅数"
+            },
+            {
+              "label": "总楼层",
+              "value": "总楼层"
+            }
+          ],
+          "required": true
+        },
+        {
+          "name": "classification_feature_y",
+          "type": "select",
+          "label": "分类纵轴特征字段",
+          "options": [
+            {
+              "label": "单价_num（推荐）",
+              "value": "单价_num"
+            },
+            {
+              "label": "面积_num（推荐）",
+              "value": "面积_num"
+            },
+            {
+              "label": "总价_num",
+              "value": "总价_num"
+            },
+            {
+              "label": "房龄",
+              "value": "房龄"
+            },
+            {
+              "label": "室数",
+              "value": "室数"
+            },
+            {
+              "label": "厅数",
+              "value": "厅数"
+            },
+            {
+              "label": "总楼层",
+              "value": "总楼层"
+            }
+          ],
+          "required": true
         },
         {
           "max": 31,
@@ -268,11 +366,84 @@
           "required": true
         },
         {
-          "name": "cluster_features",
-          "type": "text",
-          "label": "聚类特征字段",
-          "required": true,
-          "placeholder": "用英文逗号分隔"
+          "name": "cluster_feature_x",
+          "type": "select",
+          "label": "聚类横轴特征字段",
+          "options": [
+            {
+              "label": "单价_num（推荐）",
+              "value": "单价_num"
+            },
+            {
+              "label": "面积_num（推荐）",
+              "value": "面积_num"
+            },
+            {
+              "label": "总价_num",
+              "value": "总价_num"
+            },
+            {
+              "label": "关注_num",
+              "value": "关注_num"
+            },
+            {
+              "label": "房龄",
+              "value": "房龄"
+            },
+            {
+              "label": "室数",
+              "value": "室数"
+            },
+            {
+              "label": "厅数",
+              "value": "厅数"
+            },
+            {
+              "label": "总楼层",
+              "value": "总楼层"
+            }
+          ],
+          "required": true
+        },
+        {
+          "name": "cluster_feature_y",
+          "type": "select",
+          "label": "聚类纵轴特征字段",
+          "options": [
+            {
+              "label": "单价_num（推荐）",
+              "value": "单价_num"
+            },
+            {
+              "label": "面积_num（推荐）",
+              "value": "面积_num"
+            },
+            {
+              "label": "总价_num",
+              "value": "总价_num"
+            },
+            {
+              "label": "关注_num",
+              "value": "关注_num"
+            },
+            {
+              "label": "房龄",
+              "value": "房龄"
+            },
+            {
+              "label": "室数",
+              "value": "室数"
+            },
+            {
+              "label": "厅数",
+              "value": "厅数"
+            },
+            {
+              "label": "总楼层",
+              "value": "总楼层"
+            }
+          ],
+          "required": true
         },
         {
           "max": 10,
@@ -317,6 +488,86 @@
           "step": 1,
           "type": "number",
           "label": "可视化排名数量",
+          "required": true
+        },
+        {
+          "name": "visual_comparison_chart",
+          "type": "select",
+          "label": "对比性分析：选择图表",
+          "options": [
+            {
+              "label": "柱状图：城区 + 平均单价，比较城区单价排名",
+              "value": "region_unit_price_bar"
+            },
+            {
+              "label": "柱状图：装修类型 + 平均单价，比较装修类型价格差异",
+              "value": "decoration_unit_price_bar"
+            },
+            {
+              "label": "柱状图：城区 + 平均总价，比较城区总价排名",
+              "value": "region_total_price_bar"
+            }
+          ],
+          "required": true
+        },
+        {
+          "name": "visual_structure_chart",
+          "type": "select",
+          "label": "结构性分析：选择图表",
+          "options": [
+            {
+              "label": "饼图：城区 + 房源数量，观察城区房源占比",
+              "value": "region_count_pie"
+            },
+            {
+              "label": "饼图：价格档 + 房源数量，观察价格档结构",
+              "value": "price_level_pie"
+            },
+            {
+              "label": "柱状图：户型 + 房源数量，观察户型结构",
+              "value": "room_count_bar"
+            }
+          ],
+          "required": true
+        },
+        {
+          "name": "visual_descriptive_chart",
+          "type": "select",
+          "label": "描述性分析：选择图表",
+          "options": [
+            {
+              "label": "直方图：单价分布，观察单价集中区间",
+              "value": "unit_price_hist"
+            },
+            {
+              "label": "直方图：面积分布，观察面积集中区间",
+              "value": "area_hist"
+            },
+            {
+              "label": "直方图：关注人数分布，观察关注热度分布",
+              "value": "follow_hist"
+            }
+          ],
+          "required": true
+        },
+        {
+          "name": "visual_relation_chart",
+          "type": "select",
+          "label": "关系分析：选择图表",
+          "options": [
+            {
+              "label": "散点图：面积 + 总价，观察面积和总价关系",
+              "value": "area_total_scatter"
+            },
+            {
+              "label": "散点图：面积 + 单价，观察面积和单价关系",
+              "value": "area_unit_price_scatter"
+            },
+            {
+              "label": "散点图：关注人数 + 单价，观察关注和单价关系",
+              "value": "follow_unit_price_scatter"
+            }
+          ],
           "required": true
         }
       ],
@@ -391,7 +642,7 @@
           "fields": [
             "source_clean_table",
             "regression_target",
-            "regression_features",
+            "regression_feature",
             "regression_test_size",
             "association_min_support",
             "association_min_confidence",
@@ -399,7 +650,7 @@
             "random_state"
           ],
           "apply_label": "应用第二阶段参数到代码",
-          "description": "数据读取、线性回归、关联关系挖掘。",
+          "description": "数据读取、单变量线性回归、关联关系挖掘。回归部分由学生自选 1 个预测目标和 1 个特征字段。",
           "available_libraries": [
             {
               "label": "pandas",
@@ -409,6 +660,11 @@
             {
               "label": "numpy",
               "value": "numpy",
+              "default_selected": true
+            },
+            {
+              "label": "sklearn.model_selection",
+              "value": "sklearn.model_selection",
               "default_selected": true
             },
             {
@@ -439,18 +695,24 @@
           "fields": [
             "analysis_table",
             "high_follow_threshold",
-            "classification_features",
+            "classification_feature_x",
+            "classification_feature_y",
             "knn_neighbors",
             "max_k_compare",
-            "cluster_features",
+            "cluster_feature_x",
+            "cluster_feature_y",
             "cluster_count",
             "dbscan_eps",
             "dbscan_min_samples",
             "random_state",
-            "visual_top_n"
+            "visual_top_n",
+            "visual_comparison_chart",
+            "visual_structure_chart",
+            "visual_descriptive_chart",
+            "visual_relation_chart"
           ],
           "apply_label": "应用第三阶段参数到代码",
-          "description": "分类分析、聚类分析、可视化整体分析。",
+          "description": "分类分析、聚类分析、可视化整体分析。可视化部分按对比、结构、描述、关系四类各选择一张图。",
           "available_libraries": [
             {
               "label": "pandas",
@@ -491,7 +753,7 @@
         }
       ]
     },
-    "code_template": "# 综合项目：某市在售房源数据可视化分析\n\n{{imports}}\n\n# 数据爬取功能构建（不用看）\ndef setup_plot_font():\n    try:\n        plt.rcParams[\"font.sans-serif\"] = [\"SimHei\", \"Microsoft YaHei\", \"Arial Unicode MS\"]\n        plt.rcParams[\"axes.unicode_minus\"] = False\n    except NameError:\n        pass\n\nsetup_plot_font()\n\ndef safe_table_name(name):\n    text = str(name).strip()\n    if not text.replace(\"_\", \"\").isalnum():\n        raise ValueError(\"数据表名只能包含字母、数字和下划线\")\n    return text\n\ndef extract_number(value):\n    match = re.search(r\"-?\\d+(?:\\.\\d+)?\", str(value))\n    return float(match.group()) if match else np.nan\n\ndef extract_year(value):\n    match = re.search(r\"(19|20)\\d{2}\", str(value))\n    return int(match.group()) if match else np.nan\n\ndef extract_rooms(value):\n    match = re.search(r\"(\\d+)室\", str(value))\n    return int(match.group(1)) if match else np.nan\n\ndef extract_halls(value):\n    match = re.search(r\"(\\d+)厅\", str(value))\n    return int(match.group(1)) if match else np.nan\n\ndef split_district(region):\n    text = str(region).strip()\n    candidates = [\"钱塘新区\", \"余杭\", \"西湖\", \"萧山\", \"江干\", \"拱墅\", \"滨江\", \"上城\", \"下城\", \"临安\", \"富阳\"]\n    for item in candidates:\n        if text.startswith(item):\n            return item\n    return \"其他\" if text else \"未知\"\n\ndef parse_floor_level(value):\n    text = str(value)\n    for item in [\"低楼层\", \"中楼层\", \"高楼层\", \"联排\", \"独栋\", \"双拼\"]:\n        if item in text:\n            return item\n    return \"未知\"\n\ndef parse_total_floor(value):\n    match = re.search(r\"共(\\d+)层\", str(value))\n    return int(match.group(1)) if match else np.nan\n\ndef parse_decoration(value):\n    text = str(value).strip()\n    if \"/\" in text:\n        return text.split(\"/\")[-1]\n    return text if text else \"未知\"\n\ndef parse_html_table(html_text):\n    soup = BeautifulSoup(html_text, \"html.parser\")\n    table = soup.find(\"table\")\n    if table is None:\n        raise ValueError(\"页面中没有找到 table 表格\")\n    rows = []\n    for tr in table.find_all(\"tr\"):\n        cells = [cell.get_text(\" \", strip=True) for cell in tr.find_all([\"th\", \"td\"])]\n        if cells:\n            rows.append(cells)\n    if len(rows) < 2:\n        raise ValueError(\"表格数据行不足\")\n    headers = rows[0]\n    records = []\n    for row in rows[1:]:\n        if len(row) < len(headers):\n            row = row + [\"\"] * (len(headers) - len(row))\n        records.append(dict(zip(headers, row[:len(headers)])))\n    return pd.DataFrame(records)\n\n\ndef build_house_tags(row):\n    tags = []\n    for col in [\"城区\", \"户型\", \"装修类型\", \"产权\", \"价格档\", \"面积档\", \"关注档\"]:\n        value = row.get(col)\n        if pd.notna(value) and str(value).strip():\n            tags.append(f\"{col}={value}\")\n    if \"南\" in str(row.get(\"朝向\", \"\")):\n        tags.append(\"朝向含南\")\n    return tags\n\n\ndef missing_strategy_label(strategy):\n    labels = {\n        \"median\": \"中位数填补\",\n        \"mean\": \"平均值填补\",\n        \"zero\": \"0 值填补\",\n        \"drop\": \"删除缺失行\",\n    }\n    return labels.get(strategy, \"中位数填补\")\n\n\ndef fill_numeric_missing(dataframe, columns, strategy):\n    strategy = strategy if strategy in {\"median\", \"mean\", \"zero\", \"drop\"} else \"median\"\n    result = dataframe.copy()\n    records = []\n    if strategy == \"drop\":\n        before_count = len(result)\n        missing_cells = int(result[columns].isna().sum().sum())\n        result = result.dropna(subset=columns).copy()\n        records.append({\n            \"字段\": \"全部数值列\",\n            \"缺失数量\": missing_cells,\n            \"填补方式\": missing_strategy_label(strategy),\n            \"填充值\": f\"删除 {before_count - len(result)} 行\",\n        })\n        return result, pd.DataFrame(records)\n\n    for col in columns:\n        missing_count = int(result[col].isna().sum())\n        if missing_count == 0:\n            continue\n        if strategy == \"mean\":\n            fill_value = result[col].mean()\n        elif strategy == \"zero\":\n            fill_value = 0\n        else:\n            fill_value = result[col].median()\n        if pd.isna(fill_value):\n            fill_value = 0\n        result[col] = result[col].fillna(fill_value)\n        records.append({\n            \"字段\": col,\n            \"缺失数量\": missing_count,\n            \"填补方式\": missing_strategy_label(strategy),\n            \"填充值\": float(fill_value),\n        })\n    if not records:\n        records.append({\n            \"字段\": \"全部数值列\",\n            \"缺失数量\": 0,\n            \"填补方式\": missing_strategy_label(strategy),\n            \"填充值\": \"无需填补\",\n        })\n    return result, pd.DataFrame(records)\n\n\n# 第一阶段\n# 连接数据库\nengine = create_engine(\n    f\"mysql+pymysql://{{db_user}}:{{db_password}}@127.0.0.1:3306/{{db_name}}?charset=utf8mb4\"\n)\n\n# 一、获取数据\nsource_url = \"{{source_url}}\"\nheaders = {\"User-Agent\": \"{{user_agent}}\"}\nresponse = requests.get(source_url, headers=headers, timeout=20)\nresponse.encoding = response.apparent_encoding\ndf_raw = parse_html_table(response.text)\n\n# 二、预览数据\npreview_count = int({{preview_count}})\nprint(\"第一阶段\")\nprint(\"步骤：获取数据\")\nprint(\"原始数据行数：\", len(df_raw))\nprint(\"原始字段数量：\", len(df_raw.columns))\nprint(df_raw.head(preview_count))\nprint(\"__TABLE_JSON__=\" + json.dumps(df_raw.head(preview_count).to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n\n# # 三、清洗字段\n#df = df_raw.copy()\n#required_cols = [\"产权\", \"关注\", \"区域\", \"单价\", \"小区\", \"年限\", \"总价/万元\", \"户型\", \"房屋编码\", \"挂牌时间\", \"朝向\", \"楼层\", \"装修情况\", \"面积\"]\n#missing_cols = [col for col in required_cols if col not in df.columns]\n#if missing_cols:\n#    raise ValueError(\"缺少字段：\" + \"、\".join(missing_cols))\n#\n#before_rows = len(df)\n#duplicate_rows = int(df.duplicated(subset=[\"房屋编码\"]).sum())\n#df = df.drop_duplicates(subset=[\"房屋编码\"], keep=\"first\").copy()\n#text_missing_fill_value = \"{{text_missing_fill_value}}\".strip() or \"未知\"\n#community_missing_fill_value = \"{{community_missing_fill_value}}\".strip() or text_missing_fill_value\n#df[\"区域\"] = df[\"区域\"].replace(\"\", np.nan).fillna(text_missing_fill_value)\n#df[\"小区\"] = df[\"小区\"].replace(\"\", np.nan).fillna(community_missing_fill_value)\n#df[\"关注_num\"] = df[\"关注\"].apply(extract_number)\n#df[\"单价_num\"] = df[\"单价\"].apply(extract_number)\n#df[\"总价_num\"] = df[\"总价/万元\"].apply(extract_number)\n#df[\"面积_num\"] = df[\"面积\"].apply(extract_number)\n#df[\"建成年份\"] = df[\"年限\"].apply(extract_year)\n#df[\"房龄\"] = 2019 - df[\"建成年份\"]\n#df[\"室数\"] = df[\"户型\"].apply(extract_rooms)\n#df[\"厅数\"] = df[\"户型\"].apply(extract_halls)\n#df[\"城区\"] = df[\"区域\"].apply(split_district)\n#df[\"楼层类型\"] = df[\"楼层\"].apply(parse_floor_level)\n#df[\"总楼层\"] = df[\"楼层\"].apply(parse_total_floor)\n#df[\"装修类型\"] = df[\"装修情况\"].apply(parse_decoration)\n#df[\"挂牌时间\"] = pd.to_datetime(df[\"挂牌时间\"], errors=\"coerce\")\n#\n#numeric_cols = [\"关注_num\", \"单价_num\", \"总价_num\", \"面积_num\", \"房龄\", \"室数\", \"厅数\", \"总楼层\"]\n#for col in numeric_cols:\n#    df[col] = pd.to_numeric(df[col], errors=\"coerce\")\n\n#min_area = float({{min_area}})\n#max_area = float({{max_area}})\n#min_unit_price = float({{min_unit_price}})\n#max_unit_price = float({{max_unit_price}})\n#df = df[\n#    df[\"面积_num\"].between(min_area, max_area)\n#    & df[\"单价_num\"].between(min_unit_price, max_unit_price)\n#].copy()\n#\n#missing_fill_strategy = \"{{missing_fill_strategy}}\"\n#df, missing_summary = fill_numeric_missing(df, numeric_cols, missing_fill_strategy)\n#\n#df[\"价格档\"] = pd.qcut(df[\"单价_num\"], q=4, labels=[\"低单价\", \"中低单价\", \"中高单价\", \"高单价\"], duplicates=\"drop\").astype(str)\n#df[\"面积档\"] = pd.qcut(df[\"面积_num\"], q=4, labels=[\"小面积\", \"中小面积\", \"中大面积\", \"大面积\"], duplicates=\"drop\").astype(str)\n#df[\"关注档\"] = pd.qcut(df[\"关注_num\"], q=4, labels=[\"低关注\", \"中低关注\", \"中高关注\", \"高关注\"], duplicates=\"drop\").astype(str)\n#\n#clean_summary = pd.DataFrame([\n#    {\"项目\": \"原始行数\", \"数值\": int(before_rows)},\n#    {\"项目\": \"重复房屋编码行数\", \"数值\": duplicate_rows},\n#    {\"项目\": \"清洗后行数\", \"数值\": int(len(df))},\n#    {\"项目\": \"清洗后字段数\", \"数值\": int(len(df.columns))},\n#    {\"项目\": \"缺失值填补策略\", \"数值\": missing_strategy_label(missing_fill_strategy)},\n#    {\"项目\": \"文本缺失填充值\", \"数值\": text_missing_fill_value}\n#])\n#print()\n#print(\"步骤：清洗字段\")\n#print(clean_summary)\n#print(\"__TABLE_JSON__=\" + json.dumps(clean_summary.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n#print()\n#print(\"步骤：缺失值处理\")\n#print(missing_summary)\n#print(\"__TABLE_JSON__=\" + json.dumps(missing_summary.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n\n## 三、存储数据\n#target_table = safe_table_name(\"{{target_table}}\")\n#df.to_sql(target_table, engine, if_exists=\"replace\", index=False)\n#store_summary = pd.DataFrame([\n#    {\"项目\": \"写入数据库\", \"值\": \"{{db_name}}\"},\n#    {\"项目\": \"写入数据表\", \"值\": target_table},\n#    {\"项目\": \"写入行数\", \"值\": int(len(df))}\n#])\n#print()\n#print(\"步骤：存储数据\")\n#print(store_summary)\n#print(\"__TABLE_JSON__=\" + json.dumps(store_summary.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n\n\n# # 第二阶段\n# source_clean_table = safe_table_name(\"{{source_clean_table}}\")\n# df2 = pd.read_sql(f\"SELECT * FROM `{source_clean_table}`\", engine)\n# preview_count = int({{preview_count}})\n# print(\"第二阶段\")\n# print(\"步骤：读取数据\")\n# print(df2.head(preview_count))\n# print(\"__TABLE_JSON__=\" + json.dumps(df2.head(preview_count).to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n#\n# # 回归建模\n# regression_target = \"{{regression_target}}\"\n# regression_features = [col.strip() for col in \"{{regression_features}}\".split(\",\") if col.strip()]\n# regression_cols = regression_features + [regression_target]\n# model_df = df2[regression_cols].apply(pd.to_numeric, errors=\"coerce\").dropna()\n# X = model_df[regression_features]\n# y = model_df[regression_target]\n# X_train, X_test, y_train, y_test = train_test_split(\n#     X,\n#     y,\n#     test_size=float({{regression_test_size}}),\n#     random_state=int({{random_state}})\n# )\n# reg_model = LinearRegression()\n# reg_model.fit(X_train, y_train)\n# y_pred = reg_model.predict(X_test)\n# regression_summary = pd.DataFrame([\n#     {\"指标\": \"样本数\", \"值\": int(len(model_df))},\n#     {\"指标\": \"训练集样本数\", \"值\": int(len(X_train))},\n#     {\"指标\": \"测试集样本数\", \"值\": int(len(X_test))},\n#     {\"指标\": \"MSE\", \"值\": float(mean_squared_error(y_test, y_pred))},\n#     {\"指标\": \"R2\", \"值\": float(r2_score(y_test, y_pred))}\n# ])\n# coef_df = pd.DataFrame({\"特征\": regression_features, \"系数\": reg_model.coef_})\n# print()\n# print(\"步骤：回归建模\")\n# print(regression_summary)\n# print(\"__TABLE_JSON__=\" + json.dumps(regression_summary.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n# print(coef_df)\n# print(\"__TABLE_JSON__=\" + json.dumps(coef_df.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n#\n# plt.figure(figsize=(7, 5))\n# plt.scatter(y_test, y_pred, alpha=0.55)\n# plt.xlabel(\"真实值\")\n# plt.ylabel(\"预测值\")\n# plt.title(\"线性回归：真实值与预测值\")\n# plt.tight_layout()\n# plt.show()\n#\n# # 关联关系\n# tag_records = []\n# for _, row in df2.iterrows():\n#     house_id = row.get(\"房屋编码\")\n#     for tag in build_house_tags(row):\n#         tag_records.append({\"房屋编码\": house_id, \"标签\": tag, \"是否出现\": 1})\n# tag_df = pd.DataFrame(tag_records)\n# basket = tag_df.pivot_table(index=\"房屋编码\", columns=\"标签\", values=\"是否出现\", aggfunc=\"max\", fill_value=0)\n# frequent_itemsets = apriori(basket.astype(bool), min_support=float({{association_min_support}}), use_colnames=True)\n# frequent_itemsets = frequent_itemsets.sort_values(\"support\", ascending=False)\n# rules = association_rules(frequent_itemsets, metric=\"confidence\", min_threshold=float({{association_min_confidence}}))\n# rules = rules.sort_values([\"lift\", \"confidence\", \"support\"], ascending=False)\n# display_rules = rules[[\"antecedents\", \"consequents\", \"support\", \"confidence\", \"lift\"]].head(int({{top_n_rules}})).copy()\n# display_rules[\"antecedents\"] = display_rules[\"antecedents\"].apply(lambda x: \",\".join(list(x)))\n# display_rules[\"consequents\"] = display_rules[\"consequents\"].apply(lambda x: \",\".join(list(x)))\n# print()\n# print(\"步骤：关联关系\")\n# print(display_rules)\n# print(\"__TABLE_JSON__=\" + json.dumps(display_rules.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n\n\n# # 第三阶段\n# analysis_table = safe_table_name(\"{{analysis_table}}\")\n# df3 = pd.read_sql(f\"SELECT * FROM `{analysis_table}`\", engine)\n# print(\"第三阶段\")\n#\n# # 分类分析\n# high_follow_threshold = float({{high_follow_threshold}})\n# df3[\"高关注房源\"] = (pd.to_numeric(df3[\"关注_num\"], errors=\"coerce\") >= high_follow_threshold).astype(int)\n# classification_features = [col.strip() for col in \"{{classification_features}}\".split(\",\") if col.strip()]\n# class_df = df3[classification_features + [\"高关注房源\"]].apply(pd.to_numeric, errors=\"coerce\").dropna()\n# X = class_df[classification_features]\n# y = class_df[\"高关注房源\"]\n# X_train, X_test, y_train, y_test = train_test_split(\n#     X,\n#     y,\n#     test_size=0.2,\n#     random_state=int({{random_state}}),\n#     stratify=y\n# )\n# scaler = StandardScaler()\n# X_train_scaled = scaler.fit_transform(X_train)\n# X_test_scaled = scaler.transform(X_test)\n# knn = KNeighborsClassifier(n_neighbors=int({{knn_neighbors}}))\n# knn.fit(X_train_scaled, y_train)\n# y_pred = knn.predict(X_test_scaled)\n# class_summary = pd.DataFrame([\n#     {\"指标\": \"样本数\", \"值\": int(len(class_df))},\n#     {\"指标\": \"高关注阈值\", \"值\": high_follow_threshold},\n#     {\"指标\": \"K值\", \"值\": int({{knn_neighbors}})},\n#     {\"指标\": \"准确率\", \"值\": float(accuracy_score(y_test, y_pred))}\n# ])\n# print(\"步骤：分类分析\")\n# print(class_summary)\n# print(\"__TABLE_JSON__=\" + json.dumps(class_summary.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n#\n# compare_rows = []\n# for k in range(1, int({{max_k_compare}}) + 1, 2):\n#     model = KNeighborsClassifier(n_neighbors=k)\n#     model.fit(X_train_scaled, y_train)\n#     compare_rows.append({\"K值\": k, \"准确率\": float(accuracy_score(y_test, model.predict(X_test_scaled)))})\n# compare_df = pd.DataFrame(compare_rows)\n# print(compare_df)\n# print(\"__TABLE_JSON__=\" + json.dumps(compare_df.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n#\n# # 聚类分析\n# cluster_features = [col.strip() for col in \"{{cluster_features}}\".split(\",\") if col.strip()]\n# cluster_df = df3[cluster_features].apply(pd.to_numeric, errors=\"coerce\").dropna()\n# cluster_scaled = StandardScaler().fit_transform(cluster_df)\n# kmeans = KMeans(n_clusters=int({{cluster_count}}), random_state=int({{random_state}}), n_init=10)\n# cluster_df[\"KMeans标签\"] = kmeans.fit_predict(cluster_scaled)\n# dbscan = DBSCAN(eps=float({{dbscan_eps}}), min_samples=int({{dbscan_min_samples}}))\n# cluster_df[\"DBSCAN标签\"] = dbscan.fit_predict(cluster_scaled)\n# cluster_summary = pd.DataFrame([\n#     {\"算法\": \"KMeans\", \"聚类数量\": int({{cluster_count}}), \"噪声点数量\": 0},\n#     {\"算法\": \"DBSCAN\", \"聚类数量\": int(len(set(cluster_df[\"DBSCAN标签\"]) - {-1})), \"噪声点数量\": int((cluster_df[\"DBSCAN标签\"] == -1).sum())}\n# ])\n# print()\n# print(\"步骤：聚类分析\")\n# print(cluster_summary)\n# print(\"__TABLE_JSON__=\" + json.dumps(cluster_summary.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n#\n# plt.figure(figsize=(7, 5))\n# sns.scatterplot(data=cluster_df, x=cluster_features[0], y=cluster_features[1], hue=\"KMeans标签\", palette=\"tab10\", s=24, alpha=0.7)\n# plt.title(\"KMeans 聚类结果\")\n# plt.tight_layout()\n# plt.show()\n#\n# # 可视化分析\n# visual_top_n = int({{visual_top_n}})\n# region_price = df3.groupby(\"城区\", as_index=False)[\"单价_num\"].mean().sort_values(\"单价_num\", ascending=False).head(visual_top_n)\n# print()\n# print(\"步骤：可视化分析\")\n# print(region_price)\n# print(\"__TABLE_JSON__=\" + json.dumps(region_price.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n#\n# fig, axes = plt.subplots(2, 2, figsize=(12, 9))\n# sns.barplot(data=region_price, x=\"城区\", y=\"单价_num\", ax=axes[0, 0], color=\"#60a5fa\")\n# axes[0, 0].set_title(\"城区平均单价排名\")\n# axes[0, 0].tick_params(axis=\"x\", rotation=30)\n# sns.histplot(df3[\"单价_num\"], bins=30, kde=True, ax=axes[0, 1], color=\"#34d399\")\n# axes[0, 1].set_title(\"房源单价分布\")\n# sns.scatterplot(data=df3, x=\"面积_num\", y=\"单价_num\", hue=\"关注档\", ax=axes[1, 0], s=20, alpha=0.65)\n# axes[1, 0].set_title(\"面积与单价关系\")\n# follow_data = df3[\"关注档\"].value_counts().reset_index()\n# follow_data.columns = [\"关注档\", \"数量\"]\n# sns.barplot(data=follow_data, x=\"关注档\", y=\"数量\", ax=axes[1, 1], palette=\"Blues\")\n# axes[1, 1].set_title(\"关注档分布\")\n# plt.tight_layout()\n# plt.show()",
+    "code_template": "# 综合项目：某市在售房源数据可视化分析\n\n{{imports}}\n\n# 数据爬取功能构建（不用看）\ndef setup_plot_font():\n    try:\n        plt.rcParams[\"font.sans-serif\"] = [\"SimHei\", \"Microsoft YaHei\", \"Arial Unicode MS\"]\n        plt.rcParams[\"axes.unicode_minus\"] = False\n    except NameError:\n        pass\n\nsetup_plot_font()\n\ndef safe_table_name(name):\n    text = str(name).strip()\n    if not text.replace(\"_\", \"\").isalnum():\n        raise ValueError(\"数据表名只能包含字母、数字和下划线\")\n    return text\n\ndef extract_number(value):\n    match = re.search(r\"-?\\d+(?:\\.\\d+)?\", str(value))\n    return float(match.group()) if match else np.nan\n\ndef extract_year(value):\n    match = re.search(r\"(19|20)\\d{2}\", str(value))\n    return int(match.group()) if match else np.nan\n\ndef extract_rooms(value):\n    match = re.search(r\"(\\d+)室\", str(value))\n    return int(match.group(1)) if match else np.nan\n\ndef extract_halls(value):\n    match = re.search(r\"(\\d+)厅\", str(value))\n    return int(match.group(1)) if match else np.nan\n\ndef split_district(region):\n    text = str(region).strip()\n    candidates = [\"钱塘新区\", \"余杭\", \"西湖\", \"萧山\", \"江干\", \"拱墅\", \"滨江\", \"上城\", \"下城\", \"临安\", \"富阳\"]\n    for item in candidates:\n        if text.startswith(item):\n            return item\n    return \"其他\" if text else \"未知\"\n\ndef parse_floor_level(value):\n    text = str(value)\n    for item in [\"低楼层\", \"中楼层\", \"高楼层\", \"联排\", \"独栋\", \"双拼\"]:\n        if item in text:\n            return item\n    return \"未知\"\n\ndef parse_total_floor(value):\n    match = re.search(r\"共(\\d+)层\", str(value))\n    return int(match.group(1)) if match else np.nan\n\ndef parse_decoration(value):\n    text = str(value).strip()\n    if \"/\" in text:\n        return text.split(\"/\")[-1]\n    return text if text else \"未知\"\n\ndef parse_html_table(html_text):\n    soup = BeautifulSoup(html_text, \"html.parser\")\n    table = soup.find(\"table\")\n    if table is None:\n        raise ValueError(\"页面中没有找到 table 表格\")\n    rows = []\n    for tr in table.find_all(\"tr\"):\n        cells = [cell.get_text(\" \", strip=True) for cell in tr.find_all([\"th\", \"td\"])]\n        if cells:\n            rows.append(cells)\n    if len(rows) < 2:\n        raise ValueError(\"表格数据行不足\")\n    headers = rows[0]\n    records = []\n    for row in rows[1:]:\n        if len(row) < len(headers):\n            row = row + [\"\"] * (len(headers) - len(row))\n        records.append(dict(zip(headers, row[:len(headers)])))\n    return pd.DataFrame(records)\n\n\ndef build_house_tags(row):\n    tags = []\n    for col in [\"城区\", \"户型\", \"装修类型\", \"产权\", \"价格档\", \"面积档\", \"关注档\"]:\n        value = row.get(col)\n        if pd.notna(value) and str(value).strip():\n            tags.append(f\"{col}={value}\")\n    if \"南\" in str(row.get(\"朝向\", \"\")):\n        tags.append(\"朝向含南\")\n    return tags\n\n\ndef missing_strategy_label(strategy):\n    labels = {\n        \"median\": \"中位数填补\",\n        \"mean\": \"平均值填补\",\n        \"zero\": \"0 值填补\",\n        \"drop\": \"删除缺失行\",\n    }\n    return labels.get(strategy, \"中位数填补\")\n\n\ndef fill_numeric_missing(dataframe, columns, strategy):\n    strategy = strategy if strategy in {\"median\", \"mean\", \"zero\", \"drop\"} else \"median\"\n    result = dataframe.copy()\n    records = []\n    if strategy == \"drop\":\n        before_count = len(result)\n        missing_cells = int(result[columns].isna().sum().sum())\n        result = result.dropna(subset=columns).copy()\n        records.append({\n            \"字段\": \"全部数值列\",\n            \"缺失数量\": missing_cells,\n            \"填补方式\": missing_strategy_label(strategy),\n            \"填充值\": f\"删除 {before_count - len(result)} 行\",\n        })\n        return result, pd.DataFrame(records)\n\n    for col in columns:\n        missing_count = int(result[col].isna().sum())\n        if missing_count == 0:\n            continue\n        if strategy == \"mean\":\n            fill_value = result[col].mean()\n        elif strategy == \"zero\":\n            fill_value = 0\n        else:\n            fill_value = result[col].median()\n        if pd.isna(fill_value):\n            fill_value = 0\n        result[col] = result[col].fillna(fill_value)\n        records.append({\n            \"字段\": col,\n            \"缺失数量\": missing_count,\n            \"填补方式\": missing_strategy_label(strategy),\n            \"填充值\": float(fill_value),\n        })\n    if not records:\n        records.append({\n            \"字段\": \"全部数值列\",\n            \"缺失数量\": 0,\n            \"填补方式\": missing_strategy_label(strategy),\n            \"填充值\": \"无需填补\",\n        })\n    return result, pd.DataFrame(records)\n\n\n# 第一阶段\n# 连接数据库\nengine = create_engine(\n    f\"mysql+pymysql://{{db_user}}:{{db_password}}@127.0.0.1:3306/{{db_name}}?charset=utf8mb4\"\n)\n\n# 一、获取数据\nsource_url = \"{{source_url}}\"\nheaders = {\"User-Agent\": \"{{user_agent}}\"}\nresponse = requests.get(source_url, headers=headers, timeout=20)\nresponse.encoding = response.apparent_encoding\ndf_raw = parse_html_table(response.text)\n\n# 二、预览数据\npreview_count = int({{preview_count}})\nprint(\"第一阶段\")\nprint(\"步骤：获取数据\")\nprint(\"原始数据行数：\", len(df_raw))\nprint(\"原始字段数量：\", len(df_raw.columns))\nprint(df_raw.head(preview_count))\nprint(\"__TABLE_JSON__=\" + json.dumps(df_raw.head(preview_count).to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n\n# # 三、清洗字段\n#df = df_raw.copy()\n#required_cols = [\"产权\", \"关注\", \"区域\", \"单价\", \"小区\", \"年限\", \"总价/万元\", \"户型\", \"房屋编码\", \"挂牌时间\", \"朝向\", \"楼层\", \"装修情况\", \"面积\"]\n#missing_cols = [col for col in required_cols if col not in df.columns]\n#if missing_cols:\n#    raise ValueError(\"缺少字段：\" + \"、\".join(missing_cols))\n#\n#before_rows = len(df)\n#duplicate_rows = int(df.duplicated(subset=[\"房屋编码\"]).sum())\n#df = df.drop_duplicates(subset=[\"房屋编码\"], keep=\"first\").copy()\n#text_missing_fill_value = \"{{text_missing_fill_value}}\".strip() or \"未知\"\n#community_missing_fill_value = \"{{community_missing_fill_value}}\".strip() or text_missing_fill_value\n#df[\"区域\"] = df[\"区域\"].replace(\"\", np.nan).fillna(text_missing_fill_value)\n#df[\"小区\"] = df[\"小区\"].replace(\"\", np.nan).fillna(community_missing_fill_value)\n#df[\"关注_num\"] = df[\"关注\"].apply(extract_number)\n#df[\"单价_num\"] = df[\"单价\"].apply(extract_number)\n#df[\"总价_num\"] = df[\"总价/万元\"].apply(extract_number)\n#df[\"面积_num\"] = df[\"面积\"].apply(extract_number)\n#df[\"建成年份\"] = df[\"年限\"].apply(extract_year)\n#df[\"房龄\"] = 2019 - df[\"建成年份\"]\n#df[\"室数\"] = df[\"户型\"].apply(extract_rooms)\n#df[\"厅数\"] = df[\"户型\"].apply(extract_halls)\n#df[\"城区\"] = df[\"区域\"].apply(split_district)\n#df[\"楼层类型\"] = df[\"楼层\"].apply(parse_floor_level)\n#df[\"总楼层\"] = df[\"楼层\"].apply(parse_total_floor)\n#df[\"装修类型\"] = df[\"装修情况\"].apply(parse_decoration)\n#df[\"挂牌时间\"] = pd.to_datetime(df[\"挂牌时间\"], errors=\"coerce\")\n#\n#numeric_cols = [\"关注_num\", \"单价_num\", \"总价_num\", \"面积_num\", \"房龄\", \"室数\", \"厅数\", \"总楼层\"]\n#for col in numeric_cols:\n#    df[col] = pd.to_numeric(df[col], errors=\"coerce\")\n\n#min_area = float({{min_area}})\n#max_area = float({{max_area}})\n#min_unit_price = float({{min_unit_price}})\n#max_unit_price = float({{max_unit_price}})\n#df = df[\n#    df[\"面积_num\"].between(min_area, max_area)\n#    & df[\"单价_num\"].between(min_unit_price, max_unit_price)\n#].copy()\n#\n#missing_fill_strategy = \"{{missing_fill_strategy}}\"\n#df, missing_summary = fill_numeric_missing(df, numeric_cols, missing_fill_strategy)\n#\n#df[\"价格档\"] = pd.qcut(df[\"单价_num\"], q=4, labels=[\"低单价\", \"中低单价\", \"中高单价\", \"高单价\"], duplicates=\"drop\").astype(str)\n#df[\"面积档\"] = pd.qcut(df[\"面积_num\"], q=4, labels=[\"小面积\", \"中小面积\", \"中大面积\", \"大面积\"], duplicates=\"drop\").astype(str)\n#df[\"关注档\"] = pd.qcut(df[\"关注_num\"], q=4, labels=[\"低关注\", \"中低关注\", \"中高关注\", \"高关注\"], duplicates=\"drop\").astype(str)\n#\n#clean_summary = pd.DataFrame([\n#    {\"项目\": \"原始行数\", \"数值\": int(before_rows)},\n#    {\"项目\": \"重复房屋编码行数\", \"数值\": duplicate_rows},\n#    {\"项目\": \"清洗后行数\", \"数值\": int(len(df))},\n#    {\"项目\": \"清洗后字段数\", \"数值\": int(len(df.columns))},\n#    {\"项目\": \"缺失值填补策略\", \"数值\": missing_strategy_label(missing_fill_strategy)},\n#    {\"项目\": \"文本缺失填充值\", \"数值\": text_missing_fill_value}\n#])\n#print()\n#print(\"步骤：清洗字段\")\n#print(clean_summary)\n#print(\"__TABLE_JSON__=\" + json.dumps(clean_summary.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n#print()\n#print(\"步骤：缺失值处理\")\n#print(missing_summary)\n#print(\"__TABLE_JSON__=\" + json.dumps(missing_summary.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n\n## 四、存储数据\n#target_table = safe_table_name(\"{{target_table}}\")\n#df.to_sql(target_table, engine, if_exists=\"replace\", index=False)\n#store_summary = pd.DataFrame([\n#    {\"项目\": \"写入数据库\", \"值\": \"{{db_name}}\"},\n#    {\"项目\": \"写入数据表\", \"值\": target_table},\n#    {\"项目\": \"写入行数\", \"值\": int(len(df))}\n#])\n#print()\n#print(\"步骤：存储数据\")\n#print(store_summary)\n#print(\"__TABLE_JSON__=\" + json.dumps(store_summary.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n\n\n# # 第二阶段(根据注释分阶段释放代码) \n#\n# #一、读取数据表（本阶段基础数据读取，为保证后续步骤正确运行，此步骤为必须释放部分）\n# print() \n# source_clean_table = safe_table_name(\"{{source_clean_table}}\")\n# df2 = pd.read_sql(f\"SELECT * FROM `{source_clean_table}`\", engine)\n# preview_count = int({{preview_count}})\n# preview_df2 = df2.head(preview_count)\n# print(\"第二阶段\")\n# print(\"步骤：读取数据\")\n# print(\"__TABLE_JSON__=\" + json.dumps(preview_df2.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n# print(preview_df2)\n#\n# # 二、回归建模：（自选 1 个预测目标和 1 个特征字段进行模型训练）\n# print()\n# regression_target = \"{{regression_target}}\"\n# regression_feature = \"{{regression_feature}}\"\n# regression_cols = [regression_feature, regression_target]\n# model_df = df2[regression_cols].apply(pd.to_numeric, errors=\"coerce\").dropna()\n# if len(model_df) < 5:\n#     raise ValueError(\"可用于回归的有效样本太少，请更换预测目标或特征字段\")\n# X = model_df[[regression_feature]]\n# y = model_df[regression_target]\n# X_train, X_test, y_train, y_test = train_test_split(\n#     X,\n#     y,\n#     test_size=float({{regression_test_size}}),\n#     random_state=int({{random_state}})\n# )\n# reg_model = LinearRegression()\n# reg_model.fit(X_train, y_train)\n# y_pred = reg_model.predict(X_test)\n# intercept = float(reg_model.intercept_)\n# slope = float(reg_model.coef_[0])\n# linear_expression = f\"{regression_target} = {slope:.4f} × {regression_feature} + {intercept:.4f}\"\n# regression_summary = pd.DataFrame([\n#     {\"指标\": \"线性函数表达式\", \"值\": linear_expression},\n#     {\"指标\": \"预测目标\", \"值\": regression_target},\n#     {\"指标\": \"特征字段\", \"值\": regression_feature},\n#     {\"指标\": \"有效样本数\", \"值\": int(len(model_df))},\n#     {\"指标\": \"测试集比例\", \"值\": float({{regression_test_size}})},\n#     {\"指标\": \"均方误差 MSE（越小越好）\", \"值\": float(mean_squared_error(y_test, y_pred))},\n#     {\"指标\": \"决定系数 R2（越接近 1 越好）\", \"值\": float(r2_score(y_test, y_pred))},\n#     {\"指标\": \"截距\", \"值\": intercept},\n#     {\"指标\": \"斜率\", \"值\": slope}\n# ])\n# plot_compare_df = pd.DataFrame({\n#     regression_feature: X_test[regression_feature].values,\n#     \"真实值\": y_test.values,\n#     \"预测值\": y_pred,\n# }).sort_values(regression_feature).reset_index(drop=True)\n# label_count = min(6, len(plot_compare_df))\n# label_indices = np.linspace(0, len(plot_compare_df) - 1, label_count, dtype=int) if label_count > 0 else []\n# label_df = plot_compare_df.iloc[label_indices].copy() if label_count > 0 else plot_compare_df.head(0).copy()\n# label_df[\"残差\"] = label_df[\"真实值\"] - label_df[\"预测值\"]\n# display_compare_df = label_df.copy()\n# for col in [regression_feature, \"真实值\", \"预测值\", \"残差\"]:\n#     display_compare_df[col] = display_compare_df[col].round(4)\n# print()\n# print(\"步骤：单变量线性回归\")\n# print(\"模型线性函数：\", linear_expression)\n# print(\"请在实训报告中结合 MSE、R2、真实值与预测值差异、趋势线，评价该预测模型是否可用。\")\n# print(regression_summary)\n# print(\"__TABLE_JSON__=\" + json.dumps(regression_summary.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n# print()\n# print(\"步骤：真实值与预测值对比（与图中标注点一致）\")\n# print(display_compare_df)\n#\n# trend_df = model_df.sort_values(regression_feature).copy()\n# trend_df[\"预测值\"] = reg_model.predict(trend_df[[regression_feature]])\n# plt.figure(figsize=(8, 5.5))\n# plt.scatter(model_df[regression_feature], model_df[regression_target], alpha=0.45, label=\"真实数据\")\n# plt.scatter(plot_compare_df[regression_feature], plot_compare_df[\"预测值\"], color=\"#f97316\", s=28, alpha=0.8, label=\"测试集预测值\")\n# plt.plot(trend_df[regression_feature], trend_df[\"预测值\"], color=\"#ef4444\", linewidth=2, label=\"回归趋势线\")\n# for _, row in label_df.iterrows():\n#     plt.vlines(row[regression_feature], row[\"真实值\"], row[\"预测值\"], colors=\"#94a3b8\", linestyles=\"dashed\", linewidth=1, alpha=0.75)\n#     plt.annotate(\n#         f\"预测={row['预测值']:.2f}\",\n#         xy=(row[regression_feature], row[\"预测值\"]),\n#         xytext=(6, 6),\n#         textcoords=\"offset points\",\n#         fontsize=9,\n#         color=\"#b45309\",\n#         bbox={\"facecolor\": \"white\", \"alpha\": 0.78, \"edgecolor\": \"#fed7aa\"}\n#     )\n# plt.text(\n#     0.04,\n#     0.96,\n#     linear_expression,\n#     transform=plt.gca().transAxes,\n#     va=\"top\",\n#     fontsize=10,\n#     bbox={\"facecolor\": \"white\", \"alpha\": 0.82, \"edgecolor\": \"#cbd5e1\"}\n# )\n# plt.xlabel(regression_feature)\n# plt.ylabel(regression_target)\n# plt.title(f\"单变量线性回归：{regression_feature} 预测 {regression_target}\")\n# plt.legend()\n# plt.tight_layout()\n# plt.show()\n#\n# # 三、关联关系（设定最低参数阈值进行模型训练）\n# print()\n# tag_records = []\n# for _, row in df2.iterrows():\n#     house_id = row.get(\"房屋编码\")\n#     for tag in build_house_tags(row):\n#         tag_records.append({\"房屋编码\": house_id, \"标签\": tag, \"是否出现\": 1})\n# tag_df = pd.DataFrame(tag_records)\n# basket = tag_df.pivot_table(index=\"房屋编码\", columns=\"标签\", values=\"是否出现\", aggfunc=\"max\", fill_value=0)\n# frequent_itemsets = apriori(basket.astype(bool), min_support=float({{association_min_support}}), use_colnames=True)\n# frequent_itemsets = frequent_itemsets.sort_values(\"support\", ascending=False)\n# rules = association_rules(frequent_itemsets, metric=\"confidence\", min_threshold=float({{association_min_confidence}}))\n# if rules.empty:\n#     raise ValueError(\"没有找到满足条件的关联规则，请适当降低最小支持度或最小置信度\")\n# rules = rules.sort_values([\"lift\", \"confidence\", \"support\"], ascending=False)\n# top_rule_count = int({{top_n_rules}})\n# display_rules = rules[[\"antecedents\", \"consequents\", \"support\", \"confidence\", \"lift\"]].head(top_rule_count).copy()\n# display_rules[\"前提\"] = display_rules[\"antecedents\"].apply(lambda x: \"、\".join(sorted(list(x))))\n# display_rules[\"结果\"] = display_rules[\"consequents\"].apply(lambda x: \"、\".join(sorted(list(x))))\n# display_rules[\"规则\"] = display_rules.apply(lambda row: f\"如果 {row['前提']}，那么通常也会出现 {row['结果']}\", axis=1)\n# display_rules[\"支持度\"] = display_rules[\"support\"].round(4)\n# display_rules[\"置信度\"] = display_rules[\"confidence\"].round(4)\n# display_rules[\"提升度\"] = display_rules[\"lift\"].round(4)\n# display_rules[\"解释\"] = display_rules.apply(\n#     lambda row: f\"当房源信息包含「{row['前提']}」时，有 {row['置信度']:.2%} 的概率也会出现「{row['结果']}」，比「{row['结果']}」单独出现的概率提升 {row['提升度']:.2f} 倍。\",\n#     axis=1\n# )\n# readable_rules = display_rules[[\"规则\", \"支持度\", \"置信度\", \"提升度\", \"解释\"]].reset_index(drop=True)\n# print()\n# print(\"步骤：关联关系\")\n# print(f\"共找到 {len(rules)} 条关联规则，下面展示提升度较高的前 {len(readable_rules)} 条。\")\n# print(\"阅读方法：先看置信度，再看提升度；提升度大于 1，说明结果在该前提下更容易出现。\")\n# for idx, row in readable_rules.iterrows():\n#     print(f\"{idx + 1}. {row['规则']}\")\n#     print(f\"   支持度={row['支持度']:.4f}，置信度={row['置信度']:.4f}，提升度={row['提升度']:.4f}\")\n#     print(f\"   {row['解释']}\")\n# print(\"__TABLE_JSON__=\" + json.dumps(readable_rules.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n#\n\n# # 第三阶段\n# #一、读取数据表（本阶段基础数据读取，为保证后续步骤正确运行，此步骤为必须释放部分）\n# print()\n# analysis_table = safe_table_name(\"{{analysis_table}}\")\n# df3 = pd.read_sql(f\"SELECT * FROM `{analysis_table}`\", engine)\n# print(\"第三阶段\")\n#print()\n#\n# # 二、分类分析：用两个数值特征判断房源是否属于高关注(自选2个特征字段进行模型训练)\n# high_follow_threshold = float({{high_follow_threshold}})\n# df3[\"高关注房源\"] = (pd.to_numeric(df3[\"关注_num\"], errors=\"coerce\") >= high_follow_threshold).astype(int)\n# classification_feature_x = \"{{classification_feature_x}}\"\n# classification_feature_y = \"{{classification_feature_y}}\"\n# if classification_feature_x == classification_feature_y:\n#     raise ValueError(\"分类横轴特征和纵轴特征不能相同，请选择两个不同字段\")\n# classification_features = [classification_feature_x, classification_feature_y]\n# class_df = df3[classification_features + [\"高关注房源\"]].apply(pd.to_numeric, errors=\"coerce\").dropna()\n# if class_df[\"高关注房源\"].nunique() < 2:\n#     raise ValueError(\"当前高关注阈值只得到一种类别，请调整高关注阈值\")\n# X = class_df[classification_features]\n# y = class_df[\"高关注房源\"]\n# X_train, X_test, y_train, y_test = train_test_split(\n#     X,\n#     y,\n#     test_size=0.2,\n#     random_state=int({{random_state}}),\n#     stratify=y\n# )\n# scaler = StandardScaler()\n# X_train_scaled = scaler.fit_transform(X_train)\n# X_test_scaled = scaler.transform(X_test)\n# requested_k = int({{knn_neighbors}})\n# effective_k = min(requested_k, len(X_train))\n# if effective_k % 2 == 0:\n#     effective_k = max(1, effective_k - 1)\n# knn = KNeighborsClassifier(n_neighbors=effective_k)\n# knn.fit(X_train_scaled, y_train)\n# y_pred = knn.predict(X_test_scaled)\n# class_summary = pd.DataFrame([\n#     {\"指标\": \"分类目标\", \"值\": f\"关注_num >= {high_follow_threshold} 记为高关注\"},\n#     {\"指标\": \"横轴特征\", \"值\": classification_feature_x},\n#     {\"指标\": \"纵轴特征\", \"值\": classification_feature_y},\n#     {\"指标\": \"样本数\", \"值\": int(len(class_df))},\n#     {\"指标\": \"高关注样本数\", \"值\": int(class_df[\"高关注房源\"].sum())},\n#     {\"指标\": \"非高关注样本数\", \"值\": int((class_df[\"高关注房源\"] == 0).sum())},\n#     {\"指标\": \"设置K值\", \"值\": requested_k},\n#     {\"指标\": \"实际K值\", \"值\": effective_k},\n#     {\"指标\": \"准确率\", \"值\": float(accuracy_score(y_test, y_pred))}\n# ])\n# print(\"步骤：分类分析\")\n# print(\"分类含义：根据两个特征判断房源是否为高关注房源。\")\n# print(class_summary)\n# print(\"__TABLE_JSON__=\" + json.dumps(class_summary.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n#\n# compare_rows = []\n# for k in range(1, int({{max_k_compare}}) + 1, 2):\n#     if k > len(X_train):\n#         continue\n#     model = KNeighborsClassifier(n_neighbors=k)\n#     model.fit(X_train_scaled, y_train)\n#     compare_rows.append({\"K值\": k, \"准确率\": float(accuracy_score(y_test, model.predict(X_test_scaled)))})\n# compare_df = pd.DataFrame(compare_rows)\n# print(compare_df)\n# print(\"__TABLE_JSON__=\" + json.dumps(compare_df.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n#\n# plot_df = class_df.copy()\n# plot_df[\"类别\"] = plot_df[\"高关注房源\"].map({0: \"非高关注\", 1: \"高关注\"})\n# test_plot_df = X_test.copy()\n# test_plot_df[\"真实类别\"] = y_test.map({0: \"非高关注\", 1: \"高关注\"}).values\n# test_plot_df[\"预测类别\"] = pd.Series(y_pred).map({0: \"非高关注\", 1: \"高关注\"}).values\n# test_plot_df[\"预测正确\"] = np.where(y_test.values == y_pred, \"预测正确\", \"预测错误\")\n# plt.figure(figsize=(8, 5.8))\n# sns.scatterplot(\n#     data=plot_df,\n#     x=classification_feature_x,\n#     y=classification_feature_y,\n#     hue=\"类别\",\n#     palette={\"非高关注\": \"#60a5fa\", \"高关注\": \"#f97316\"},\n#     alpha=0.55,\n#     s=28\n# )\n# sns.scatterplot(\n#     data=test_plot_df,\n#     x=classification_feature_x,\n#     y=classification_feature_y,\n#     style=\"预测正确\",\n#     markers={\"预测正确\": \"o\", \"预测错误\": \"X\"},\n#     color=\"#111827\",\n#     s=70,\n#     legend=True\n# )\n# plt.axhline(plot_df[classification_feature_y].median(), color=\"#94a3b8\", linestyle=\"--\", linewidth=1, alpha=0.7)\n# plt.axvline(plot_df[classification_feature_x].median(), color=\"#94a3b8\", linestyle=\"--\", linewidth=1, alpha=0.7)\n# plt.title(f\"KNN 分类散点图：用 {classification_feature_x} 和 {classification_feature_y} 判断高关注房源\")\n# plt.xlabel(classification_feature_x)\n# plt.ylabel(classification_feature_y)\n# plt.tight_layout()\n# plt.show()\n#print()\n#\n# # 三、聚类分析：用两个数值特征寻找相似房源分组（自选2个特征字段进行模型训练）\n# cluster_feature_x = \"{{cluster_feature_x}}\"\n# cluster_feature_y = \"{{cluster_feature_y}}\"\n# if cluster_feature_x == cluster_feature_y:\n#     raise ValueError(\"聚类横轴特征和纵轴特征不能相同，请选择两个不同字段\")\n# cluster_features = [cluster_feature_x, cluster_feature_y]\n# cluster_df = df3[cluster_features].apply(pd.to_numeric, errors=\"coerce\").dropna().copy()\n# if len(cluster_df) < int({{cluster_count}}):\n#     raise ValueError(\"可用于聚类的样本太少，请更换聚类特征字段\")\n# cluster_scaler = StandardScaler()\n# cluster_scaled = cluster_scaler.fit_transform(cluster_df[cluster_features])\n# kmeans = KMeans(n_clusters=int({{cluster_count}}), random_state=int({{random_state}}), n_init=10)\n# cluster_df[\"KMeans标签\"] = kmeans.fit_predict(cluster_scaled)\n# kmeans_centers = pd.DataFrame(cluster_scaler.inverse_transform(kmeans.cluster_centers_), columns=cluster_features)\n# kmeans_profile = cluster_df.groupby(\"KMeans标签\", as_index=False).agg(\n#     房源数量=(cluster_feature_x, \"size\"),\n#     横轴均值=(cluster_feature_x, \"mean\"),\n#     纵轴均值=(cluster_feature_y, \"mean\")\n# )\n# kmeans_profile[\"算法\"] = \"KMeans\"\n# kmeans_profile[\"分组\"] = kmeans_profile[\"KMeans标签\"].apply(lambda x: f\"第 {int(x)} 类\")\n# dbscan = DBSCAN(eps=float({{dbscan_eps}}), min_samples=int({{dbscan_min_samples}}))\n# cluster_df[\"DBSCAN标签\"] = dbscan.fit_predict(cluster_scaled)\n# dbscan_cluster_count = int(len(set(cluster_df[\"DBSCAN标签\"]) - {-1}))\n# dbscan_noise_count = int((cluster_df[\"DBSCAN标签\"] == -1).sum())\n# dbscan_profile = cluster_df.groupby(\"DBSCAN标签\", as_index=False).agg(\n#     房源数量=(cluster_feature_x, \"size\"),\n#     横轴均值=(cluster_feature_x, \"mean\"),\n#     纵轴均值=(cluster_feature_y, \"mean\")\n# )\n# dbscan_profile[\"算法\"] = \"DBSCAN\"\n# dbscan_profile[\"分组\"] = dbscan_profile[\"DBSCAN标签\"].apply(lambda x: \"噪声点\" if int(x) == -1 else f\"第 {int(x)} 类\")\n# cluster_summary = pd.DataFrame([\n#     {\"算法\": \"KMeans\", \"使用特征\": f\"{cluster_feature_x}、{cluster_feature_y}\", \"聚类数量\": int({{cluster_count}}), \"噪声点数量\": 0, \"说明\": \"把全部房源分成指定数量的类别，适合观察大致分层。\"},\n#     {\"算法\": \"DBSCAN\", \"使用特征\": f\"{cluster_feature_x}、{cluster_feature_y}\", \"聚类数量\": dbscan_cluster_count, \"噪声点数量\": dbscan_noise_count, \"说明\": \"按密度寻找自然聚集区域，离群房源会标记为噪声点。\"}\n# ])\n# cluster_profile = pd.concat([\n#     kmeans_profile[[\"算法\", \"分组\", \"房源数量\", \"横轴均值\", \"纵轴均值\"]],\n#     dbscan_profile[[\"算法\", \"分组\", \"房源数量\", \"横轴均值\", \"纵轴均值\"]]\n# ], ignore_index=True)\n# for col in [\"横轴均值\", \"纵轴均值\"]:\n#     cluster_profile[col] = cluster_profile[col].round(4)\n# print()\n# print(\"步骤：聚类分析\")\n# print(\"聚类特征含义：用这两个字段衡量房源之间的相似程度，也作为散点图的横轴和纵轴。\")\n# print(\"KMeans：分成固定数量的类别；DBSCAN：按密度自动找类别，并识别噪声点。\")\n# print(cluster_summary)\n# print(\"分组画像：\")\n# print(cluster_profile)\n# print(\"__TABLE_JSON__=\" + json.dumps(cluster_profile.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n#\n# plt.figure(figsize=(8, 5.8))\n# sns.scatterplot(data=cluster_df, x=cluster_feature_x, y=cluster_feature_y, hue=\"KMeans标签\", palette=\"tab10\", s=28, alpha=0.68)\n# plt.scatter(kmeans_centers[cluster_feature_x], kmeans_centers[cluster_feature_y], marker=\"X\", s=180, c=\"#111827\", label=\"聚类中心\")\n# plt.title(f\"KMeans 聚类结果：{cluster_feature_x} 与 {cluster_feature_y}\")\n# plt.xlabel(cluster_feature_x)\n# plt.ylabel(cluster_feature_y)\n# plt.legend()\n# plt.tight_layout()\n# plt.show()\n#\n# dbscan_plot_df = cluster_df.copy()\n# dbscan_plot_df[\"DBSCAN分组\"] = dbscan_plot_df[\"DBSCAN标签\"].apply(lambda x: \"噪声点\" if int(x) == -1 else f\"第 {int(x)} 类\")\n# plt.figure(figsize=(8, 5.8))\n# sns.scatterplot(data=dbscan_plot_df, x=cluster_feature_x, y=cluster_feature_y, hue=\"DBSCAN分组\", palette=\"tab10\", s=28, alpha=0.7)\n# noise_df = dbscan_plot_df[dbscan_plot_df[\"DBSCAN标签\"] == -1]\n# if not noise_df.empty:\n#     plt.scatter(noise_df[cluster_feature_x], noise_df[cluster_feature_y], marker=\"x\", s=52, c=\"#111827\", label=\"噪声点强调\")\n# plt.title(f\"DBSCAN 聚类结果：eps={float({{dbscan_eps}})}，min_samples={int({{dbscan_min_samples}})}\")\n# plt.xlabel(cluster_feature_x)\n# plt.ylabel(cluster_feature_y)\n# plt.legend()\n# plt.tight_layout()\n# plt.show()\n# print()\n#\n# # 四、可视化分析：（四类分析各选择其一生成可视化图表，并总结分析可视化图表所代表的含义）\n# visual_top_n = int({{visual_top_n}})\n# comparison_chart = \"{{visual_comparison_chart}}\"\n# structure_chart = \"{{visual_structure_chart}}\"\n# descriptive_chart = \"{{visual_descriptive_chart}}\"\n# relation_chart = \"{{visual_relation_chart}}\"\n# visual_df = df3.copy()\n# for col in [\"单价_num\", \"总价_num\", \"面积_num\", \"关注_num\", \"房龄\", \"室数\", \"厅数\"]:\n#     if col in visual_df.columns:\n#         visual_df[col] = pd.to_numeric(visual_df[col], errors=\"coerce\")\n# chart_choice_names = {\n#     \"region_unit_price_bar\": \"城区平均单价排名\",\n#     \"decoration_unit_price_bar\": \"装修类型平均单价\",\n#     \"region_total_price_bar\": \"城区平均总价排名\",\n#     \"region_count_pie\": \"城区房源数量占比\",\n#     \"price_level_pie\": \"价格档结构\",\n#     \"room_count_bar\": \"户型数量结构\",\n#     \"unit_price_hist\": \"单价分布\",\n#     \"area_hist\": \"面积分布\",\n#     \"follow_hist\": \"关注人数分布\",\n#     \"area_total_scatter\": \"面积与总价\",\n#     \"area_unit_price_scatter\": \"面积与单价\",\n#     \"follow_unit_price_scatter\": \"关注人数与单价\",\n# }\n# chart_tasks = pd.DataFrame([\n#     {\"分析类型\": \"对比性分析\", \"选择图表\": chart_choice_names.get(comparison_chart, comparison_chart), \"看图说话方向\": \"比较不同类别谁高谁低，说明可能原因。\"},\n#     {\"分析类型\": \"结构性分析\", \"选择图表\": chart_choice_names.get(structure_chart, structure_chart), \"看图说话方向\": \"观察各部分占比，找出主流构成。\"},\n#     {\"分析类型\": \"描述性分析\", \"选择图表\": chart_choice_names.get(descriptive_chart, descriptive_chart), \"看图说话方向\": \"描述集中区间、离散程度、是否有极端值。\"},\n#     {\"分析类型\": \"关系分析\", \"选择图表\": chart_choice_names.get(relation_chart, relation_chart), \"看图说话方向\": \"观察两个变量是否同向、反向或关系不明显。\"}\n# ])\n# print()\n# print(\"步骤：可视化分析\")\n# print(\"每类分析从 3 张备选图中选择 1 张，解释图表含义。\")\n# print(chart_tasks)\n# print(\"__TABLE_JSON__=\" + json.dumps(chart_tasks.to_dict(orient=\"records\"), ensure_ascii=False, default=str))\n#\n# def draw_comparison_chart(choice):\n#     plt.figure(figsize=(8, 5.2))\n#     if choice == \"decoration_unit_price_bar\":\n#         plot_data = visual_df.groupby(\"装修类型\", as_index=False)[\"单价_num\"].mean().dropna().sort_values(\"单价_num\", ascending=False).head(visual_top_n)\n#         sns.barplot(data=plot_data, x=\"装修类型\", y=\"单价_num\", color=\"#34d399\")\n#         plt.title(\"对比性分析：装修类型平均单价\")\n#         plt.xlabel(\"装修类型\")\n#         plt.ylabel(\"平均单价\")\n#     elif choice == \"region_total_price_bar\":\n#         plot_data = visual_df.groupby(\"城区\", as_index=False)[\"总价_num\"].mean().dropna().sort_values(\"总价_num\", ascending=False).head(visual_top_n)\n#         sns.barplot(data=plot_data, x=\"城区\", y=\"总价_num\", color=\"#f59e0b\")\n#         plt.title(\"对比性分析：城区平均总价排名\")\n#         plt.xlabel(\"城区\")\n#         plt.ylabel(\"平均总价\")\n#     else:\n#         plot_data = visual_df.groupby(\"城区\", as_index=False)[\"单价_num\"].mean().dropna().sort_values(\"单价_num\", ascending=False).head(visual_top_n)\n#         sns.barplot(data=plot_data, x=\"城区\", y=\"单价_num\", color=\"#60a5fa\")\n#         plt.title(\"对比性分析：城区平均单价排名\")\n#         plt.xlabel(\"城区\")\n#         plt.ylabel(\"平均单价\")\n#     plt.xticks(rotation=35)\n#     plt.tight_layout()\n#     plt.show()\n#\n# def draw_structure_chart(choice):\n#     plt.figure(figsize=(8, 5.2))\n#     if choice == \"price_level_pie\" and \"价格档\" in visual_df.columns:\n#         count_data = visual_df[\"价格档\"].value_counts()\n#         plt.pie(count_data.values, labels=count_data.index, autopct=\"%1.1f%%\", startangle=90)\n#         plt.title(\"结构性分析：价格档结构\")\n#     elif choice == \"room_count_bar\":\n#         count_data = visual_df[\"户型\"].value_counts().head(visual_top_n)\n#         sns.barplot(x=count_data.index, y=count_data.values, color=\"#818cf8\")\n#         plt.title(\"结构性分析：户型数量结构\")\n#         plt.xlabel(\"户型\")\n#         plt.ylabel(\"数量\")\n#         plt.xticks(rotation=35)\n#     else:\n#         count_data = visual_df[\"城区\"].value_counts().head(visual_top_n)\n#         plt.pie(count_data.values, labels=count_data.index, autopct=\"%1.1f%%\", startangle=90)\n#         plt.title(\"结构性分析：城区房源数量占比\")\n#     plt.tight_layout()\n#     plt.show()\n#\n# def draw_descriptive_chart(choice):\n#     plt.figure(figsize=(8, 5.2))\n#     if choice == \"area_hist\":\n#         sns.histplot(visual_df[\"面积_num\"].dropna(), bins=30, kde=True, color=\"#34d399\")\n#         plt.title(\"描述性分析：面积分布\")\n#         plt.xlabel(\"面积\")\n#     elif choice == \"follow_hist\":\n#         sns.histplot(visual_df[\"关注_num\"].dropna(), bins=30, kde=True, color=\"#f97316\")\n#         plt.title(\"描述性分析：关注人数分布\")\n#         plt.xlabel(\"关注人数\")\n#     else:\n#         sns.histplot(visual_df[\"单价_num\"].dropna(), bins=30, kde=True, color=\"#60a5fa\")\n#         plt.title(\"描述性分析：单价分布\")\n#         plt.xlabel(\"单价\")\n#     plt.ylabel(\"数量\")\n#     plt.tight_layout()\n#     plt.show()\n#\n# def draw_relation_chart(choice):\n#     plt.figure(figsize=(8, 5.2))\n#     if choice == \"area_unit_price_scatter\":\n#         sns.scatterplot(data=visual_df, x=\"面积_num\", y=\"单价_num\", hue=\"关注档\" if \"关注档\" in visual_df.columns else None, s=22, alpha=0.62)\n#         plt.title(\"关系分析：面积与单价\")\n#         plt.xlabel(\"面积\")\n#         plt.ylabel(\"单价\")\n#     elif choice == \"follow_unit_price_scatter\":\n#         sns.scatterplot(data=visual_df, x=\"关注_num\", y=\"单价_num\", hue=\"价格档\" if \"价格档\" in visual_df.columns else None, s=22, alpha=0.62)\n#         plt.title(\"关系分析：关注人数与单价\")\n#         plt.xlabel(\"关注人数\")\n#         plt.ylabel(\"单价\")\n#     else:\n#         sns.scatterplot(data=visual_df, x=\"面积_num\", y=\"总价_num\", hue=\"城区\", s=22, alpha=0.62, legend=False)\n#         plt.title(\"关系分析：面积与总价\")\n#         plt.xlabel(\"面积\")\n#         plt.ylabel(\"总价\")\n#     plt.tight_layout()\n#     plt.show()\n#\n# draw_comparison_chart(comparison_chart)\n# draw_structure_chart(structure_chart)\n# draw_descriptive_chart(descriptive_chart)\n# draw_relation_chart(relation_chart)",
     "import_config": {
       "fixed_imports": [],
       "optional_imports": [],
@@ -500,8 +762,26 @@
     "allow_edit_generated_code": true,
     "sort_order": 100,
     "is_active": true,
-    "is_published": false,
-    "open_at": null,
-    "due_at": null
+    "is_published": true,
+    "open_at": "2026-06-11T01:00:00.000Z",
+    "due_at": "2026-06-12T15:59:00.000Z",
+    "class_deadlines": {
+      "2025级大数据与会计1班": {
+        "open_at": "2026-06-11T02:55:00.000Z",
+        "due_at": "2026-06-12T15:59:00.000Z"
+      },
+      "2025级大数据与会计2班": {
+        "open_at": "2026-06-11T00:25:00.000Z",
+        "due_at": "2026-06-12T15:59:00.000Z"
+      },
+      "2025级大数据与会计3班": {
+        "open_at": "2026-06-11T01:06:00.000Z",
+        "due_at": "2026-06-11T15:59:00.000Z"
+      },
+      "2025级大数据与会计4班": {
+        "open_at": "2026-06-11T06:47:00.000Z",
+        "due_at": "2026-06-11T15:59:00.000Z"
+      }
+    }
   }
 }
